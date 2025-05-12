@@ -347,7 +347,7 @@ async def get_region_stats():
     return region_stats
 
 # Get property types
-@api_router.get("/properties/types")
+@api_router.get("/property-types")
 async def get_property_types():
     # Use aggregation to get unique property types
     pipeline = [
