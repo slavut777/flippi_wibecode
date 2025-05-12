@@ -1,0 +1,21 @@
+title,price,currency,property_type,area,rooms,bathrooms,latitude,longitude,address,city,region,postal_code,listing_type,source,url
+Luxury Apartment in Paris,450000,EUR,Apartment,95,3,2,48.8566,2.3522,25 Rue de Rivoli,Paris,Île-de-France,75001,sale,leboncoin,https://example.com/listing/1
+Studio in the Latin Quarter,750,EUR,Studio,28,1,1,48.8449,2.3444,12 Rue Saint-Jacques,Paris,Île-de-France,75005,rent,leboncoin,https://example.com/listing/2
+Townhouse in Lyon,320000,EUR,House,120,4,2,45.7640,4.8357,45 Rue de la République,Lyon,Auvergne-Rhône-Alpes,69002,sale,idealista,https://example.com/listing/3
+Modern Flat for Rent,950,EUR,Apartment,65,2,1,45.7640,4.8357,78 Avenue Berthelot,Lyon,Auvergne-Rhône-Alpes,69007,rent,idealista,https://example.com/listing/4
+Beachfront Villa in Nice,1250000,EUR,Villa,220,5,4,43.7102,7.2620,15 Promenade des Anglais,Nice,Provence-Alpes-Côte d'Azur,06000,sale,leboncoin,https://example.com/listing/5
+Cozy Apartment near Beach,1200,EUR,Apartment,50,2,1,43.7102,7.2620,8 Rue de France,Nice,Provence-Alpes-Côte d'Azur,06000,rent,leboncoin,https://example.com/listing/6
+Historic House in Bordeaux,380000,EUR,House,140,5,2,44.8378,0.5792,56 Cours de l'Intendance,Bordeaux,Nouvelle-Aquitaine,33000,sale,idealista,https://example.com/listing/7
+Student Studio in Bordeaux,550,EUR,Studio,22,1,1,44.8378,0.5792,35 Rue Sainte-Catherine,Bordeaux,Nouvelle-Aquitaine,33000,rent,idealista,https://example.com/listing/8
+Family Home in Toulouse,295000,EUR,House,150,4,2,43.6047,1.4442,12 Rue d'Alsace-Lorraine,Toulouse,Occitanie,31000,sale,leboncoin,https://example.com/listing/9
+Modern Apartment in Toulouse,780,EUR,Apartment,60,2,1,43.6047,1.4442,45 Avenue Jean Rieux,Toulouse,Occitanie,31500,rent,leboncoin,https://example.com/listing/10
+Penthouse in Strasbourg,520000,EUR,Penthouse,120,3,2,48.5734,7.7521,18 Place Kléber,Strasbourg,Grand Est,67000,sale,idealista,https://example.com/listing/11
+2-Room Flat for Rent,650,EUR,Apartment,45,2,1,48.5734,7.7521,34 Rue des Juifs,Strasbourg,Grand Est,67000,rent,idealista,https://example.com/listing/12
+Rural House with Garden,245000,EUR,House,160,4,2,47.2173,1.5534,25 Rue du Bourg,Blois,Centre-Val de Loire,41000,sale,leboncoin,https://example.com/listing/13
+City Center Studio,520,EUR,Studio,25,1,1,47.2173,1.5534,8 Rue Denis Papin,Blois,Centre-Val de Loire,41000,rent,leboncoin,https://example.com/listing/14
+Renovated Apartment in Lille,198000,EUR,Apartment,70,3,1,50.6292,3.0573,56 Rue Faidherbe,Lille,Hauts-de-France,59000,sale,idealista,https://example.com/listing/15
+Student Housing in Lille,480,EUR,Studio,20,1,1,50.6292,3.0573,12 Rue Nationale,Lille,Hauts-de-France,59000,rent,idealista,https://example.com/listing/16
+Seafront Apartment in Marseille,325000,EUR,Apartment,85,3,1,43.2965,5.3698,45 Quai des Belges,Marseille,Provence-Alpes-Côte d'Azur,13001,sale,leboncoin,https://example.com/listing/17
+Furnished Flat for Rent,850,EUR,Apartment,55,2,1,43.2965,5.3698,18 Rue de la République,Marseille,Provence-Alpes-Côte d'Azur,13001,rent,leboncoin,https://example.com/listing/18
+Suburban House in Rennes,230000,EUR,House,110,4,2,48.1173,1.6778,34 Rue de Paris,Rennes,Bretagne,35000,sale,idealista,https://example.com/listing/19
+Central Flat for Rent,620,EUR,Apartment,40,2,1,48.1173,1.6778,12 Place de Bretagne,Rennes,Bretagne,35000,rent,idealista,https://example.com/listing/20
