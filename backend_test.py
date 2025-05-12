@@ -71,7 +71,7 @@ class LocationIntelligenceTester:
         return self.run_test(
             "Get Property Types",
             "GET",
-            "api/properties/types",
+            "api/property-types",
             200
         )
 
