@@ -349,7 +349,20 @@ async def get_region_stats():
 # Get property types
 @api_router.get("/properties/types")
 async def get_property_types():
-    types = await db.properties.distinct("property_type")
+    # Use aggregation to get unique property types
+    pipeline = [
+        {"$group": {"_id": "$property_type"}},
+        {"$match": {"_id": {"$ne": None}}},
+        {"$sort": {"_id": 1}}
+    ]
+    
+    cursor = db.properties.aggregate(pipeline)
+    
+    types = []
+    async for doc in cursor:
+        if doc["_id"]:
+            types.append(doc["_id"])
+    
     return types
 
 # Get sources
