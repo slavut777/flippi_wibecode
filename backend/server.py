@@ -237,6 +237,9 @@ async def get_property(property_id: str):
     property_data = await db.properties.find_one({"id": property_id})
     
     if property_data:
+        # Convert ObjectId to string if needed
+        if '_id' in property_data:
+            property_data['_id'] = str(property_data['_id'])
         return property_data
     else:
         raise HTTPException(status_code=404, detail="Property not found")
