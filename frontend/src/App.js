@@ -488,7 +488,7 @@ const Dashboard = () => {
               <div className="bg-white rounded shadow p-4">
                 <h3 className="font-bold text-lg mb-2">Average Sale Price</h3>
                 <p className="text-3xl font-bold text-indigo-600">
-                  {properties.length > 0 
+                  {properties.length > 0 && properties.filter(p => p.is_for_sale).length > 0
                     ? (properties
                         .filter(p => p.is_for_sale)
                         .reduce((sum, p) => sum + p.price, 0) / 
