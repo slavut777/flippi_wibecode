@@ -313,7 +313,10 @@ async def get_region_stats():
         }
     ]
     
-    result = await db.properties.aggregate(pipeline).to_list(length=100)
+    cursor = db.properties.aggregate(pipeline)
+    result = []
+    async for doc in cursor:
+        result.append(doc)
     
     # Calculate ROI (Return on Investment) in years
     region_stats = []
