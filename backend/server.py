@@ -366,7 +366,7 @@ async def get_property_types():
     return types
 
 # Get sources
-@api_router.get("/properties/sources")
+@api_router.get("/property-sources")
 async def get_sources():
     # Use aggregation to get unique sources
     pipeline = [
