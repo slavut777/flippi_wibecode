@@ -368,7 +368,20 @@ async def get_property_types():
 # Get sources
 @api_router.get("/properties/sources")
 async def get_sources():
-    sources = await db.properties.distinct("source")
+    # Use aggregation to get unique sources
+    pipeline = [
+        {"$group": {"_id": "$source"}},
+        {"$match": {"_id": {"$ne": None}}},
+        {"$sort": {"_id": 1}}
+    ]
+    
+    cursor = db.properties.aggregate(pipeline)
+    
+    sources = []
+    async for doc in cursor:
+        if doc["_id"]:
+            sources.append(doc["_id"])
+    
     return sources
 
 # Web scraping routes
