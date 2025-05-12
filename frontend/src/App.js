@@ -113,7 +113,7 @@ const Dashboard = () => {
   // Fetch property types for filter dropdown
   const fetchPropertyTypes = async () => {
     try {
-      const response = await axios.get(`${API}/properties/types`);
+      const response = await axios.get(`${API}/property-types`);
       setPropertyTypes(response.data);
     } catch (error) {
       console.error('Error fetching property types:', error);
@@ -123,7 +123,7 @@ const Dashboard = () => {
   // Fetch data sources for filter dropdown
   const fetchSources = async () => {
     try {
-      const response = await axios.get(`${API}/properties/sources`);
+      const response = await axios.get(`${API}/property-sources`);
       setSources(response.data);
     } catch (error) {
       console.error('Error fetching sources:', error);
