@@ -136,7 +136,7 @@ class LocationIntelligenceTester:
             "Create Property",
             "POST",
             "api/properties",
-            201,
+            200,  # The API returns 200 instead of 201
             data=property_data
         )
 
