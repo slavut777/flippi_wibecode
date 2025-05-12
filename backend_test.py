@@ -221,6 +221,20 @@ def main():
     success, region_stats = tester.test_get_region_stats()
     if success and isinstance(region_stats, list):
         print(f"Region statistics available for {len(region_stats)} regions")
+        
+        # Print average sale and rental prices by region
+        print("\nRegion Statistics (Average Prices):")
+        for region in region_stats:
+            region_name = region.get("region_name", "Unknown")
+            avg_sale = region.get("avg_sale_price")
+            avg_rent = region.get("avg_rent_price")
+            roi = region.get("roi_years")
+            
+            sale_str = f"{avg_sale:,.2f} €" if avg_sale else "N/A"
+            rent_str = f"{avg_rent:,.2f} €/month" if avg_rent else "N/A"
+            roi_str = f"{roi:.2f} years" if roi else "N/A"
+            
+            print(f"  - {region_name}: Sale: {sale_str}, Rent: {rent_str}, ROI: {roi_str}")
     
     # Test CSV upload
     csv_path = "/app/sample_data.csv"
@@ -239,6 +253,29 @@ def main():
     success, filtered_properties = tester.test_filtered_properties()
     if success and isinstance(filtered_properties, list):
         print(f"Filtered properties count: {len(filtered_properties)}")
+    
+    # Test sale properties
+    success, sale_properties = tester.test_sale_properties()
+    if success and isinstance(sale_properties, list):
+        print(f"Properties for sale count: {len(sale_properties)}")
+        
+        # Calculate average sale price
+        if len(sale_properties) > 0:
+            avg_sale_price = sum(p.get("price", 0) for p in sale_properties) / len(sale_properties)
+            print(f"Average sale price: {avg_sale_price:,.2f} €")
+    
+    # Test rental properties
+    success, rental_properties = tester.test_rental_properties()
+    if success and isinstance(rental_properties, list):
+        print(f"Properties for rent count: {len(rental_properties)}")
+        
+        # Calculate average rental price
+        if len(rental_properties) > 0:
+            avg_rental_price = sum(p.get("price", 0) for p in rental_properties) / len(rental_properties)
+            print(f"Average rental price: {avg_rental_price:,.2f} €/month")
+    
+    # Test region filtered properties
+    tester.test_region_filtered_properties()
     
     # Test creating a new property
     success, new_property = tester.test_create_property()
