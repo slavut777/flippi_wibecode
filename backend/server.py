@@ -220,7 +220,14 @@ async def get_properties(
     
     # Query database
     cursor = db.properties.find(filter_criteria).skip(skip).limit(limit)
-    properties = await cursor.to_list(length=limit)
+    
+    # Convert MongoDB documents to dictionaries
+    properties = []
+    async for doc in cursor:
+        # Convert ObjectId to string if needed
+        if '_id' in doc:
+            doc['_id'] = str(doc['_id'])
+        properties.append(doc)
     
     return properties
 
