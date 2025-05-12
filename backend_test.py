@@ -80,7 +80,7 @@ class LocationIntelligenceTester:
         return self.run_test(
             "Get Sources",
             "GET",
-            "api/properties/sources",
+            "api/property-sources",
             200
         )
 
