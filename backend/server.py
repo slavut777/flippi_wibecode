@@ -164,56 +164,78 @@ async def fetch_buildings_from_osm(south, west, north, east):
     try:
         logging.info(f"Fetching buildings from OSM: {south}, {west}, {north}, {east}")
         
-        # Create sample building data for demonstration (since Overpy can be slow/timeout)
-        sample_buildings = [
-            {
-                "id": "123456",
-                "geometry": {
-                    "type": "Polygon",
-                    "coordinates": [[[24.77, 60.17], [24.775, 60.17], [24.775, 60.175], [24.77, 60.175], [24.77, 60.17]]]
-                },
-                "properties": {
-                    "name": "Sample Building 1",
-                    "building_type": "residential",
-                    "levels": "5",
-                    "height": "15",
-                    "address": "Tapiontori 3, Espoo"
-                }
-            },
-            {
-                "id": "789012",
-                "geometry": {
-                    "type": "Polygon",
-                    "coordinates": [[[24.76, 60.18], [24.765, 60.18], [24.765, 60.185], [24.76, 60.185], [24.76, 60.18]]]
-                },
-                "properties": {
-                    "name": "Sample Building 2",
-                    "building_type": "commercial",
-                    "levels": "3",
-                    "height": "12",
-                    "address": "Länsituulentie 8, Espoo"
-                }
-            },
-            {
-                "id": "345678",
-                "geometry": {
-                    "type": "Polygon",
-                    "coordinates": [[[24.8, 60.16], [24.805, 60.16], [24.805, 60.165], [24.8, 60.165], [24.8, 60.16]]]
-                },
-                "properties": {
-                    "name": "Sample Building 3",
-                    "building_type": "apartment",
-                    "levels": "8",
-                    "height": "24",
-                    "address": "Keilaniemenranta 2, Espoo"
-                }
-            }
-        ]
-        
-        # In a real implementation, you would use overpy to fetch this data
-        # For now we'll return sample data to avoid timeout issues
-        logging.info(f"Generated {len(sample_buildings)} sample buildings")
-        return sample_buildings
+        # Use aiohttp to make an async request to the Overpass API
+        async with aiohttp.ClientSession() as session:
+            # Construct the Overpass query for buildings
+            overpass_url = "https://overpass-api.de/api/interpreter"
+            overpass_query = f"""
+            [out:json];
+            (
+              way["building"]({south},{west},{north},{east});
+              relation["building"]({south},{west},{north},{east});
+            );
+            out body;
+            >;
+            out skel qt;
+            """
+            
+            # Make the request
+            async with session.post(overpass_url, data={"data": overpass_query}) as response:
+                if response.status != 200:
+                    logging.error(f"Error from Overpass API: {response.status}")
+                    return []
+                
+                data = await response.json()
+                
+                # Process the OSM data into GeoJSON features
+                buildings = []
+                nodes = {}
+                
+                # First, store all nodes
+                for element in data.get("elements", []):
+                    if element["type"] == "node":
+                        nodes[element["id"]] = {
+                            "lat": element["lat"],
+                            "lon": element["lon"]
+                        }
+                
+                # Then process ways (buildings)
+                for element in data.get("elements", []):
+                    if element["type"] == "way" and "tags" in element and "building" in element["tags"]:
+                        # Extract coordinates from nodes
+                        coords = []
+                        for node_id in element["nodes"]:
+                            if node_id in nodes:
+                                node = nodes[node_id]
+                                coords.append([node["lon"], node["lat"]])
+                        
+                        # Ensure the polygon is closed
+                        if coords and coords[0] != coords[-1]:
+                            coords.append(coords[0])
+                        
+                        # Only add if we have enough points for a polygon
+                        if len(coords) >= 4:  # Need at least 4 points for a closed triangle
+                            building = {
+                                "id": str(element["id"]),
+                                "geometry": {
+                                    "type": "Polygon",
+                                    "coordinates": [coords]
+                                },
+                                "properties": {
+                                    "name": element["tags"].get("name", ""),
+                                    "building_type": element["tags"].get("building", "yes"),
+                                    "levels": element["tags"].get("building:levels", ""),
+                                    "height": element["tags"].get("height", ""),
+                                    "address": (
+                                        element["tags"].get("addr:street", "") + " " + 
+                                        element["tags"].get("addr:housenumber", "")
+                                    ).strip()
+                                }
+                            }
+                            buildings.append(building)
+                
+                logging.info(f"Found {len(buildings)} buildings in OSM data")
+                return buildings
     except Exception as e:
         logging.error(f"Error fetching buildings from OSM: {str(e)}", exc_info=True)
         return []
