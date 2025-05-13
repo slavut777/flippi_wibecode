@@ -607,13 +607,16 @@ const Dashboard = () => {
   return (
     <div className="dashboard">
       {/* Header */}
-      <header className="bg-indigo-600 text-white p-4">
+      <header className="glass-header text-white p-4 sticky top-0 z-10">
         <div className="container mx-auto flex justify-between items-center">
-          <h1 className="text-2xl font-bold">Espoo Real Estate Dashboard</h1>
+          <div className="flex items-center">
+            <img src="/flippi-logo.svg" alt="Flippi Logo" className="flippi-logo" />
+            <h1 className="text-2xl font-bold">Flippi Dashboard</h1>
+          </div>
           <div className="flex space-x-2">
             <button 
               onClick={fetchProperties}
-              className="px-3 py-2 bg-indigo-700 rounded hover:bg-indigo-800 flex items-center"
+              className="glass-button px-3 py-2 rounded hover:bg-gray-700 flex items-center"
             >
               <ArrowPathIcon className="h-4 w-4 mr-1" />
               Refresh
