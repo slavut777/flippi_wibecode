@@ -628,9 +628,9 @@ const Dashboard = () => {
       {/* Main content */}
       <main className="container mx-auto p-4">
         {/* Tabs */}
-        <div className="flex border-b">
+        <div className="flex border-b border-gray-700 mb-4">
           <button 
-            className={`px-4 py-2 ${activeTab === 'map' ? 'border-b-2 border-indigo-500 text-indigo-500' : 'text-gray-500'}`}
+            className={`px-4 py-2 ${activeTab === 'map' ? 'active-tab' : 'inactive-tab'}`}
             onClick={() => setActiveTab('map')}
           >
             <div className="flex items-center">
@@ -639,7 +639,7 @@ const Dashboard = () => {
             </div>
           </button>
           <button 
-            className={`px-4 py-2 ${activeTab === 'analytics' ? 'border-b-2 border-indigo-500 text-indigo-500' : 'text-gray-500'}`}
+            className={`px-4 py-2 ${activeTab === 'analytics' ? 'active-tab' : 'inactive-tab'}`}
             onClick={() => setActiveTab('analytics')}
           >
             <div className="flex items-center">
@@ -648,7 +648,7 @@ const Dashboard = () => {
             </div>
           </button>
           <button 
-            className={`px-4 py-2 ${activeTab === 'data' ? 'border-b-2 border-indigo-500 text-indigo-500' : 'text-gray-500'}`}
+            className={`px-4 py-2 ${activeTab === 'data' ? 'active-tab' : 'inactive-tab'}`}
             onClick={() => setActiveTab('data')}
           >
             <div className="flex items-center">
