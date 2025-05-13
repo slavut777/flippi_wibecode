@@ -439,36 +439,98 @@ const Dashboard = () => {
     });
   };
   
-  // Prepare data for heatmap
-  const getHeatmapData = () => {
-    if (!properties || properties.length === 0) return [];
+  // Get properties visible in the current map bounds
+  const getVisibleProperties = () => {
+    if (!mapBounds || !properties || properties.length === 0) {
+      return properties || [];
+    }
     
-    return properties.map(property => {
-      if (!property.location || !property.location.coordinates) {
-        console.warn("Property missing coordinates:", property);
-        return null;
+    return properties.filter(property => {
+      if (!property.location || !property.location.coordinates) return false;
+      
+      const lat = property.location.coordinates[1];
+      const lng = property.location.coordinates[0];
+      
+      return mapBounds.contains([lat, lng]);
+    });
+  };
+  
+  // Get visible property stats
+  const getVisiblePropertyStats = () => {
+    const visibleProps = getVisibleProperties();
+    const saleProps = visibleProps.filter(p => p.is_for_sale === true);
+    const rentalProps = visibleProps.filter(p => p.is_for_sale === false);
+    
+    const avgSalePrice = saleProps.length > 0
+      ? saleProps.reduce((sum, p) => sum + p.price, 0) / saleProps.length
+      : 0;
+      
+    const avgRentalPrice = rentalProps.length > 0
+      ? rentalProps.reduce((sum, p) => sum + p.price, 0) / rentalProps.length
+      : 0;
+    
+    // Calculate average ROI if we have both sales and rentals
+    let avgRoi = 0;
+    let roiCount = 0;
+    
+    if (saleProps.length > 0 && rentalProps.length > 0) {
+      // Group properties by similar location (basic clustering)
+      const locationGroups = {};
+      
+      // First add sales
+      saleProps.forEach(prop => {
+        const roundedLat = Math.round(prop.location.coordinates[1] * 1000) / 1000;
+        const roundedLng = Math.round(prop.location.coordinates[0] * 1000) / 1000;
+        const key = `${roundedLat},${roundedLng}`;
+        
+        if (!locationGroups[key]) {
+          locationGroups[key] = { sales: [], rentals: [] };
+        }
+        
+        locationGroups[key].sales.push(prop);
+      });
+      
+      // Then add rentals
+      rentalProps.forEach(prop => {
+        const roundedLat = Math.round(prop.location.coordinates[1] * 1000) / 1000;
+        const roundedLng = Math.round(prop.location.coordinates[0] * 1000) / 1000;
+        const key = `${roundedLat},${roundedLng}`;
+        
+        if (!locationGroups[key]) {
+          locationGroups[key] = { sales: [], rentals: [] };
+        }
+        
+        locationGroups[key].rentals.push(prop);
+      });
+      
+      // Calculate ROI for each location group that has both sales and rentals
+      Object.values(locationGroups).forEach(group => {
+        if (group.sales.length > 0 && group.rentals.length > 0) {
+          const groupAvgSalePrice = group.sales.reduce((sum, p) => sum + p.price, 0) / group.sales.length;
+          const groupAvgRentalPrice = group.rentals.reduce((sum, p) => sum + p.price, 0) / group.rentals.length;
+          const annualRent = groupAvgRentalPrice * 12;
+          
+          if (annualRent > 0) {
+            const roi = groupAvgSalePrice / annualRent;
+            avgRoi += roi;
+            roiCount++;
+          }
+        }
+      });
+      
+      if (roiCount > 0) {
+        avgRoi = avgRoi / roiCount;
       }
-      
-      const coords = property.location.coordinates;
-      let intensity = 1;
-      
-      // Adjust intensity based on selected metric
-      if (heatmapMetric === 'price') {
-        // For price heatmap, use higher values for higher prices
-        intensity = property.is_for_sale ? 
-          property.price / 1000000 :  // Scale down sale prices (typically higher)
-          property.price / 3000;      // Scale down rental prices (typically lower)
-      } else if (heatmapMetric === 'density') {
-        // For density heatmap, use uniform intensity
-        intensity = 1.5;
-      }
-      
-      return [
-        coords[1], // latitude
-        coords[0], // longitude
-        intensity
-      ];
-    }).filter(Boolean); // Remove null values
+    }
+    
+    return {
+      totalCount: visibleProps.length,
+      saleCount: saleProps.length,
+      rentalCount: rentalProps.length,
+      avgSalePrice: avgSalePrice,
+      avgRentalPrice: avgRentalPrice,
+      avgRoi: avgRoi
+    };
   };
   
   // Prepare building-ROI data for choropleth map
