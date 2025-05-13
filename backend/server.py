@@ -227,7 +227,8 @@ async def upload_csv(file: UploadFile = File(...)):
 async def import_default_data():
     try:
         # Delete existing data
-        await db.properties.delete_many({})
+        delete_result = await db.properties.delete_many({})
+        logging.info(f"Deleted {delete_result.deleted_count} existing properties")
         
         # Import sales data
         with open('/app/sales_data.csv', 'r') as f:
@@ -240,7 +241,9 @@ async def import_default_data():
                 prop["source"] = "sales_data"
             
             if sales_properties:
-                await db.properties.insert_many(sales_properties)
+                logging.info(f"Importing {len(sales_properties)} sales properties")
+                result = await db.properties.insert_many(sales_properties)
+                logging.info(f"Inserted {len(result.inserted_ids)} sales properties")
         
         # Import rental data
         with open('/app/rental_data.csv', 'r') as f:
@@ -253,12 +256,18 @@ async def import_default_data():
                 prop["source"] = "rental_data"
             
             if rental_properties:
-                await db.properties.insert_many(rental_properties)
+                logging.info(f"Importing {len(rental_properties)} rental properties")
+                result = await db.properties.insert_many(rental_properties)
+                logging.info(f"Inserted {len(result.inserted_ids)} rental properties")
+        
+        # Verify data was imported
+        count = await db.properties.count_documents({})
+        logging.info(f"Total properties in database after import: {count}")
         
         total_count = len(sales_properties) + len(rental_properties)
         return {"message": f"Successfully imported {total_count} properties ({len(sales_properties)} sales, {len(rental_properties)} rentals)"}
     except Exception as e:
-        logging.error(f"Error importing default data: {str(e)}")
+        logging.error(f"Error importing default data: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Error importing default data: {str(e)}")
 
 # Get all properties with optional filtering
