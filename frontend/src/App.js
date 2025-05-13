@@ -661,6 +661,23 @@ const Dashboard = () => {
                       ROI Map
                     </button>
                   </div>
+                  
+                  {mapMode === 'heatmap' && (
+                    <div className="flex space-x-2">
+                      <button 
+                        className={`px-3 py-1 rounded ${heatmapMetric === 'price' ? 'bg-indigo-100 text-indigo-800' : 'bg-gray-100'}`}
+                        onClick={() => setHeatmapMetric('price')}
+                      >
+                        Price
+                      </button>
+                      <button 
+                        className={`px-3 py-1 rounded ${heatmapMetric === 'density' ? 'bg-indigo-100 text-indigo-800' : 'bg-gray-100'}`}
+                        onClick={() => setHeatmapMetric('density')}
+                      >
+                        Density
+                      </button>
+                    </div>
+                  )}
                 </div>
                 
                 <div style={{ height: '70vh', width: '100%' }}>
