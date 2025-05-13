@@ -135,6 +135,15 @@ const Dashboard = () => {
       fetchSources();
       fetchBuildings();
       fetchRoiAnalysis();
+      
+      // Debug data - show first 5 items
+      const propsResponse = await axios.get(`${API}/properties`);
+      const props = propsResponse.data;
+      if (props.length > 0) {
+        console.log('First 5 properties:', props.slice(0, 5));
+        console.log('Rental properties count:', props.filter(p => p.is_for_sale === false).length);
+        console.log('Sale properties count:', props.filter(p => p.is_for_sale === true).length);
+      }
     } catch (error) {
       console.error('Error importing default data:', error);
     } finally {
