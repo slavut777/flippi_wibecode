@@ -1,0 +1,55 @@
+
+===== Testing Espoo Real Estate Dashboard API =====
+
+
+🔍 Testing API Root...
+✅ Passed - Status: 200
+
+🔍 Testing Import Default Data...
+✅ Passed - Status: 200
+Import result: {'message': 'Successfully imported 80 properties (40 sales, 40 rentals)'}
+
+🔍 Testing Get Properties...
+✅ Passed - Status: 200
+Initial property count: 80
+
+🔍 Testing Get Property Types...
+✅ Passed - Status: 200
+Available property types: ['1 Room', '2 Room', '3 Room', '4 Room']
+
+🔍 Testing Get Sources...
+✅ Passed - Status: 200
+Available sources: ['rental_data', 'sales_data']
+
+🔍 Testing Get Region Stats...
+✅ Passed - Status: 200
+Region statistics available for 1 regions
+
+Region Statistics (Average Prices):
+  - Espoo: Sale: 340,900.00 €, Rent: 1,218.75 €/month, ROI: 23.31 years
+
+🔍 Testing Get ROI Analysis...
+❌ Failed - Expected 200, got 404
+Response: {"detail":"Property not found"}
+
+🔍 Testing Get Filtered Properties (price_min=200000&property_type=Apartment)...
+✅ Passed - Status: 200
+Filtered properties count: 0
+
+🔍 Testing Filter by Rooms (min=2, max=3)...
+✅ Passed - Status: 200
+Properties with 2-3 rooms: 48
+
+🔍 Testing Filter by Price (min=200000, max=400000)...
+✅ Passed - Status: 200
+Properties with price 200k-400k: 23
+
+🔍 Testing Get Buildings...
+❌ Failed - Expected 200, got 502
+Response: 
+
+🔍 Testing Create Property...
+❌ Failed - Expected 200, got 502
+Response: 
+
+📊 Tests passed: 9/12
