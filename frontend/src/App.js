@@ -1023,7 +1023,7 @@ const Dashboard = () => {
           <div className="mt-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* ROI Analysis */}
-              <div className="bg-white rounded shadow p-4">
+              <div className="glass-card p-4">
                 <h3 className="font-bold text-lg mb-4">Return on Investment Analysis</h3>
                 {loading ? (
                   <div className="flex justify-center items-center h-40">
