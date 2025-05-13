@@ -782,19 +782,19 @@ const Dashboard = () => {
                 <div className="mb-4 flex justify-between items-center">
                   <div className="flex space-x-2">
                     <button 
-                      className={`px-3 py-1 rounded ${mapMode === 'markers' ? 'bg-indigo-100 text-indigo-800' : 'bg-gray-100'}`}
+                      className={`glass-button px-3 py-1 rounded ${mapMode === 'markers' ? 'bg-gray-600' : ''}`}
                       onClick={() => setMapMode('markers')}
                     >
                       Markers
                     </button>
                     <button 
-                      className={`px-3 py-1 rounded ${mapMode === 'heatmap' ? 'bg-indigo-100 text-indigo-800' : 'bg-gray-100'}`}
+                      className={`glass-button px-3 py-1 rounded ${mapMode === 'heatmap' ? 'bg-gray-600' : ''}`}
                       onClick={() => setMapMode('heatmap')}
                     >
                       Heat Map
                     </button>
                     <button 
-                      className={`px-3 py-1 rounded ${mapMode === 'roi' ? 'bg-indigo-100 text-indigo-800' : 'bg-gray-100'}`}
+                      className={`glass-button px-3 py-1 rounded ${mapMode === 'roi' ? 'bg-gray-600' : ''}`}
                       onClick={() => setMapMode('roi')}
                     >
                       ROI Map
@@ -804,13 +804,13 @@ const Dashboard = () => {
                   {mapMode === 'heatmap' && (
                     <div className="flex space-x-2">
                       <button 
-                        className={`px-3 py-1 rounded ${heatmapMetric === 'price' ? 'bg-indigo-100 text-indigo-800' : 'bg-gray-100'}`}
+                        className={`glass-button px-3 py-1 rounded ${heatmapMetric === 'price' ? 'bg-gray-600' : ''}`}
                         onClick={() => setHeatmapMetric('price')}
                       >
                         Price
                       </button>
                       <button 
-                        className={`px-3 py-1 rounded ${heatmapMetric === 'density' ? 'bg-indigo-100 text-indigo-800' : 'bg-gray-100'}`}
+                        className={`glass-button px-3 py-1 rounded ${heatmapMetric === 'density' ? 'bg-gray-600' : ''}`}
                         onClick={() => setHeatmapMetric('density')}
                       >
                         Density
