@@ -316,10 +316,74 @@ const Dashboard = () => {
   // Fetch ROI analysis data
   const fetchRoiAnalysis = async () => {
     try {
-      const response = await axios.get(`${API}/roi-analysis`);
-      setRoiData(response.data);
+      // Calculate ROI directly in the frontend
+      // We already have properties loaded, so we can calculate ROI for each location
+      
+      // Create a map of coordinates to properties
+      const coordMap = {};
+      
+      // Group by coordinates with a small tolerance for matching points
+      properties.forEach(property => {
+        if (!property.location || !property.location.coordinates) return;
+        
+        const coords = property.location.coordinates;
+        // Round to 3 decimal places to group nearby properties
+        const key = `${Math.round(coords[0]*1000)/1000},${Math.round(coords[1]*1000)/1000}`;
+        
+        if (!coordMap[key]) {
+          coordMap[key] = {
+            coordinates: coords,
+            sales: [],
+            rentals: []
+          };
+        }
+        
+        if (property.is_for_sale) {
+          coordMap[key].sales.push(property);
+        } else {
+          coordMap[key].rentals.push(property);
+        }
+      });
+      
+      // Calculate ROI for each location
+      const roiData = [];
+      
+      Object.values(coordMap).forEach(locationData => {
+        if (locationData.sales.length > 0 && locationData.rentals.length > 0) {
+          // Calculate average sale price
+          const avgSalePrice = locationData.sales.reduce((sum, prop) => sum + prop.price, 0) / 
+            locationData.sales.length;
+          
+          // Calculate average monthly rent
+          const avgRent = locationData.rentals.reduce((sum, prop) => sum + prop.price, 0) / 
+            locationData.rentals.length;
+          
+          // Calculate annual rent
+          const annualRent = avgRent * 12;
+          
+          // Calculate ROI in years
+          if (annualRent > 0) {
+            const roi = avgSalePrice / annualRent;
+            
+            // Get an address from the properties
+            const address = locationData.sales[0].location.address || 
+              locationData.rentals[0].location.address || 'Unknown';
+            
+            roiData.push({
+              coordinates: locationData.coordinates,
+              avg_sale_price: avgSalePrice,
+              avg_monthly_rent: avgRent,
+              roi_years: roi,
+              address: address
+            });
+          }
+        }
+      });
+      
+      setRoiData(roiData);
+      console.log(`Calculated ROI for ${roiData.length} locations`);
     } catch (error) {
-      console.error('Error fetching ROI data:', error);
+      console.error('Error calculating ROI data:', error);
     }
   };
   
