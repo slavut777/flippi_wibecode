@@ -142,10 +142,13 @@ def parse_csv_to_properties(csv_content):
             property_data["updated_at"] = datetime.utcnow()
             
             properties.append(property_data)
-            
+        
+        if not properties:
+            logging.warning("No valid properties found in CSV data")
+        
         return properties
     except Exception as e:
-        logging.error(f"Error parsing CSV: {str(e)}")
+        logging.error(f"Error parsing CSV: {str(e)}", exc_info=True)
         raise HTTPException(status_code=400, detail=f"Error parsing CSV file: {str(e)}")
 
 # Utility function to fetch building outlines from OpenStreetMap
