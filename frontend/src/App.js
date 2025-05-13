@@ -831,9 +831,16 @@ const Dashboard = () => {
                     />
                     
                     {mapMode === 'markers' && properties.map((property, index) => (
-                      <Marker 
+                      <CircleMarker 
                         key={property.id || index}
-                        position={[property.location.coordinates[1], property.location.coordinates[0]]}
+                        center={[property.location.coordinates[1], property.location.coordinates[0]]}
+                        radius={5}
+                        pathOptions={{ 
+                          fillColor: property.is_for_sale ? '#3e3e3e' : '#6e6e6e',
+                          color: '#2e2e2e',
+                          weight: 1,
+                          fillOpacity: 0.8
+                        }}
                       >
                         <Popup>
                           <div>
@@ -846,7 +853,7 @@ const Dashboard = () => {
                             </p>
                           </div>
                         </Popup>
-                      </Marker>
+                      </CircleMarker>
                     ))}
                     
                     {mapMode === 'heatmap' && properties.length > 0 && (
