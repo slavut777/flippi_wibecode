@@ -254,12 +254,7 @@ async def import_default_data():
         # Import sales data
         with open('/app/sales_data.csv', 'r') as f:
             sales_content = f.read().encode('utf-8')
-            sales_properties = parse_csv_to_properties(sales_content)
-            
-            # Mark as sales
-            for prop in sales_properties:
-                prop["is_for_sale"] = True
-                prop["source"] = "sales_data"
+            sales_properties = parse_csv_to_properties(sales_content, is_rental=False)
             
             if sales_properties:
                 logging.info(f"Importing {len(sales_properties)} sales properties")
@@ -269,12 +264,7 @@ async def import_default_data():
         # Import rental data
         with open('/app/rental_data.csv', 'r') as f:
             rental_content = f.read().encode('utf-8')
-            rental_properties = parse_csv_to_properties(rental_content)
-            
-            # Mark as rentals
-            for prop in rental_properties:
-                prop["is_for_sale"] = False
-                prop["source"] = "rental_data"
+            rental_properties = parse_csv_to_properties(rental_content, is_rental=True)
             
             if rental_properties:
                 logging.info(f"Importing {len(rental_properties)} rental properties")
