@@ -718,7 +718,7 @@ const Dashboard = () => {
                     ))}
                     
                     {mapMode === 'heatmap' && (
-                      <Heatmap
+                      <HeatmapLayer
                         points={getHeatmapData()}
                         longitudeExtractor={m => m[1]}
                         latitudeExtractor={m => m[0]}
