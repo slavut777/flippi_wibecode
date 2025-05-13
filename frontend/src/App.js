@@ -1052,34 +1052,50 @@ const Dashboard = () => {
               {/* ROI Analysis */}
               <div className="bg-white rounded shadow p-4">
                 <h3 className="font-bold text-lg mb-4">Return on Investment Analysis</h3>
-                <div className="overflow-auto max-h-96">
-                  <table className="min-w-full">
-                    <thead>
-                      <tr className="bg-gray-100">
-                        <th className="px-4 py-2 text-left">Address</th>
-                        <th className="px-4 py-2 text-right">Avg. Sale Price</th>
-                        <th className="px-4 py-2 text-right">Avg. Rent (Monthly)</th>
-                        <th className="px-4 py-2 text-right">ROI (Years)</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {roiData.sort((a, b) => a.roi_years - b.roi_years).map((item, index) => (
-                        <tr key={index} className={index % 2 === 0 ? 'bg-gray-50' : ''}>
-                          <td className="px-4 py-2">{item.address}</td>
-                          <td className="px-4 py-2 text-right">
-                            {item.avg_sale_price.toLocaleString('fi-FI', { maximumFractionDigits: 0 })} €
-                          </td>
-                          <td className="px-4 py-2 text-right">
-                            {item.avg_monthly_rent.toLocaleString('fi-FI', { maximumFractionDigits: 0 })} €
-                          </td>
-                          <td className="px-4 py-2 text-right">
-                            {item.roi_years.toFixed(1)}
-                          </td>
+                {loading ? (
+                  <div className="flex justify-center items-center h-40">
+                    <p>Loading ROI data...</p>
+                  </div>
+                ) : roiData.length > 0 ? (
+                  <div className="overflow-auto max-h-96">
+                    <table className="min-w-full">
+                      <thead>
+                        <tr className="bg-gray-100">
+                          <th className="px-4 py-2 text-left">Address</th>
+                          <th className="px-4 py-2 text-right">Avg. Sale Price</th>
+                          <th className="px-4 py-2 text-right">Avg. Rent (Monthly)</th>
+                          <th className="px-4 py-2 text-right">ROI (Years)</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                      </thead>
+                      <tbody>
+                        {roiData.sort((a, b) => a.roi_years - b.roi_years).map((item, index) => (
+                          <tr key={index} className={index % 2 === 0 ? 'bg-gray-50' : ''}>
+                            <td className="px-4 py-2">{item.address}</td>
+                            <td className="px-4 py-2 text-right">
+                              {item.avg_sale_price.toLocaleString('fi-FI', { maximumFractionDigits: 0 })} €
+                            </td>
+                            <td className="px-4 py-2 text-right">
+                              {item.avg_monthly_rent.toLocaleString('fi-FI', { maximumFractionDigits: 0 })} €
+                            </td>
+                            <td className="px-4 py-2 text-right">
+                              {item.roi_years.toFixed(1)}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div className="p-4 bg-yellow-100 text-yellow-800 rounded">
+                    <p>No ROI data available. This could be because:</p>
+                    <ul className="list-disc ml-5 mt-2">
+                      <li>No properties have been loaded yet</li>
+                      <li>There are no locations with both sales and rental data</li>
+                      <li>The coordinates for sales and rental properties don't match</li>
+                    </ul>
+                    <p className="mt-2">Try importing data first, or check the console for errors.</p>
+                  </div>
+                )}
               </div>
               
               {/* Property Type Distribution */}
