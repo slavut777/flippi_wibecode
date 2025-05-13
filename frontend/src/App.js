@@ -1073,7 +1073,7 @@ const Dashboard = () => {
               </div>
               
               {/* Property Type Distribution */}
-              <div className="bg-white rounded shadow p-4">
+              <div className="glass-card p-4">
                 <h3 className="font-bold text-lg mb-4">Property Type Distribution</h3>
                 <div style={{ height: '300px' }}>
                   <Pie 
@@ -1091,7 +1091,7 @@ const Dashboard = () => {
               </div>
               
               {/* Price Range Distribution */}
-              <div className="bg-white rounded shadow p-4 col-span-1 md:col-span-2">
+              <div className="glass-card p-4 col-span-1 md:col-span-2">
                 <h3 className="font-bold text-lg mb-4">Price Range Distribution (Sales)</h3>
                 <div style={{ height: '300px' }}>
                   <Bar
@@ -1104,12 +1104,21 @@ const Dashboard = () => {
                         },
                         title: {
                           display: true,
-                          text: 'Number of Properties by Price Range'
+                          text: 'Number of Properties by Price Range',
+                          color: '#333'
                         }
                       },
                       scales: {
                         y: {
-                          beginAtZero: true
+                          beginAtZero: true,
+                          ticks: {
+                            color: '#333'
+                          }
+                        },
+                        x: {
+                          ticks: {
+                            color: '#333'
+                          }
                         }
                       }
                     }}
