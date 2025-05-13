@@ -280,6 +280,10 @@ async def import_default_data():
             
             if sales_properties:
                 logging.info(f"Importing {len(sales_properties)} sales properties")
+                # Debug the first property
+                if len(sales_properties) > 0:
+                    logging.info(f"Sample sale property: {sales_properties[0]}")
+                
                 result = await db.properties.insert_many(sales_properties)
                 logging.info(f"Inserted {len(result.inserted_ids)} sales properties")
         
@@ -290,15 +294,20 @@ async def import_default_data():
             
             if rental_properties:
                 logging.info(f"Importing {len(rental_properties)} rental properties")
+                # Debug the first property
+                if len(rental_properties) > 0:
+                    logging.info(f"Sample rental property: {rental_properties[0]}")
+                
                 result = await db.properties.insert_many(rental_properties)
                 logging.info(f"Inserted {len(result.inserted_ids)} rental properties")
         
         # Verify data was imported
         count = await db.properties.count_documents({})
-        logging.info(f"Total properties in database after import: {count}")
+        sale_count = await db.properties.count_documents({"is_for_sale": True})
+        rental_count = await db.properties.count_documents({"is_for_sale": False})
+        logging.info(f"Total properties in database after import: {count} (sales: {sale_count}, rentals: {rental_count})")
         
-        total_count = len(sales_properties) + len(rental_properties)
-        return {"message": f"Successfully imported {total_count} properties ({len(sales_properties)} sales, {len(rental_properties)} rentals)"}
+        return {"message": f"Successfully imported {count} properties ({sale_count} sales, {rental_count} rentals)"}
     except Exception as e:
         logging.error(f"Error importing default data: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Error importing default data: {str(e)}")
