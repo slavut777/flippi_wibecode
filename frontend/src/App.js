@@ -312,18 +312,25 @@ const Dashboard = () => {
     if (!properties || properties.length === 0) return [];
     
     return properties.map(property => {
+      if (!property.location || !property.location.coordinates) {
+        console.warn("Property missing coordinates:", property);
+        return null;
+      }
+      
       const coords = property.location.coordinates;
       let intensity = 1;
       
-      // Adjust intensity based on price
-      intensity = property.price / 10000; // Scale down prices for better visualization
+      // Adjust intensity based on selected metric
+      if (heatmapMetric === 'price') {
+        intensity = property.price / 100000; // Scale down prices for better visualization
+      }
       
       return [
         coords[1], // latitude
         coords[0], // longitude
         intensity
       ];
-    });
+    }).filter(Boolean); // Remove null values
   };
   
   // Prepare building-ROI data for choropleth map
