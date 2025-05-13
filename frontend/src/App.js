@@ -213,23 +213,101 @@ const Dashboard = () => {
   // Fetch building outlines from OpenStreetMap
   const fetchBuildings = async () => {
     try {
-      const response = await axios.get(`${API}/buildings`);
-      setBuildings(response.data);
+      // Use a direct Overpass API call from the frontend
+      const overpassUrl = "https://overpass-api.de/api/interpreter";
+      const query = `
+        [out:json];
+        (
+          way["building"](60.1,24.7,60.25,24.9);
+          relation["building"](60.1,24.7,60.25,24.9);
+        );
+        out body;
+        >;
+        out skel qt;
+      `;
       
-      // Convert to GeoJSON format
-      const geojson = {
-        type: "FeatureCollection",
-        features: response.data.map(building => ({
-          type: "Feature",
-          geometry: building.geometry,
-          properties: {
-            ...building.properties,
-            id: building.id
+      const response = await axios.post(overpassUrl, query, {
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded'
+        }
+      });
+      
+      if (response.data && response.data.elements) {
+        // Process the OSM data
+        const nodes = {};
+        const buildings = [];
+        
+        // First, index all nodes
+        response.data.elements.forEach(element => {
+          if (element.type === 'node') {
+            nodes[element.id] = {
+              lat: element.lat,
+              lon: element.lon
+            };
           }
-        }))
-      };
-      
-      setBuildingsGeoJson(geojson);
+        });
+        
+        // Then, process the ways (buildings)
+        response.data.elements.forEach(element => {
+          if (element.type === 'way' && element.tags && element.tags.building) {
+            const coords = [];
+            
+            // Extract coordinates from nodes
+            if (element.nodes) {
+              element.nodes.forEach(nodeId => {
+                if (nodes[nodeId]) {
+                  coords.push([nodes[nodeId].lon, nodes[nodeId].lat]);
+                }
+              });
+            }
+            
+            // Ensure the polygon is closed
+            if (coords.length > 0 && coords[0] !== coords[coords.length - 1]) {
+              coords.push(coords[0]);
+            }
+            
+            // Only add if we have enough points for a polygon
+            if (coords.length >= 4) {
+              buildings.push({
+                id: element.id,
+                geometry: {
+                  type: 'Polygon',
+                  coordinates: [coords]
+                },
+                properties: {
+                  name: element.tags.name || '',
+                  building_type: element.tags.building || 'yes',
+                  levels: element.tags['building:levels'] || '',
+                  height: element.tags.height || '',
+                  address: [element.tags['addr:street'], element.tags['addr:housenumber']]
+                    .filter(Boolean)
+                    .join(' ')
+                }
+              });
+            }
+          }
+        });
+        
+        setBuildings(buildings);
+        
+        // Convert to GeoJSON format
+        const geojson = {
+          type: "FeatureCollection",
+          features: buildings.map(building => ({
+            type: "Feature",
+            geometry: building.geometry,
+            properties: {
+              ...building.properties,
+              id: building.id
+            }
+          }))
+        };
+        
+        setBuildingsGeoJson(geojson);
+        console.log(`Processed ${buildings.length} buildings from OpenStreetMap`);
+      } else {
+        console.error('Invalid response from Overpass API');
+      }
     } catch (error) {
       console.error('Error fetching buildings:', error);
     }
