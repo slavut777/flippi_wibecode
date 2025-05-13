@@ -973,7 +973,11 @@ const Dashboard = () => {
                 <div className="space-y-4">
                   <div className="bg-white rounded shadow p-4">
                     <h3 className="font-bold text-lg mb-2">Property Count</h3>
-                    <p className="text-3xl font-bold text-indigo-600">{properties.length}</p>
+                    {loading ? (
+                      <p className="text-gray-500">Loading...</p>
+                    ) : (
+                      <p className="text-3xl font-bold text-indigo-600">{properties.length}</p>
+                    )}
                   </div>
                   
                   <div className="bg-white rounded shadow p-4">
