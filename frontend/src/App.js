@@ -31,6 +31,32 @@ const API = `${BACKEND_URL}/api`;
 const ESPOO_CENTER = [60.18, 24.78]; // Center of Espoo, Finland
 const ESPOO_ZOOM = 13;
 
+// Component to track map bounds
+const MapBoundsHandler = ({ onBoundsChange }) => {
+  const map = useMap();
+  
+  useEffect(() => {
+    if (!map) return;
+    
+    // Initial bounds
+    onBoundsChange(map.getBounds());
+    
+    // Add event listener for when map bounds change
+    const handleMoveEnd = () => {
+      onBoundsChange(map.getBounds());
+    };
+    
+    map.on('moveend', handleMoveEnd);
+    
+    // Cleanup
+    return () => {
+      map.off('moveend', handleMoveEnd);
+    };
+  }, [map, onBoundsChange]);
+  
+  return null;
+};
+
 // Color scale for ROI
 const getColorForROI = (roi) => {
   if (!roi) return '#CCCCCC'; // gray for no data
