@@ -1,8 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import "./App.css";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import axios from "axios";
-import { MapContainer, TileLayer, Marker, Popup, GeoJSON } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, GeoJSON, useMap } from 'react-leaflet';
 import { Heatmap } from 'react-leaflet-heatmap-layer-v3';
 import 'leaflet/dist/leaflet.css';
 import Papa from 'papaparse';
@@ -27,9 +27,57 @@ L.Icon.Default.mergeOptions({
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
-// Define France as initial map center
-const FRANCE_CENTER = [46.603354, 1.888334]; // Center of France
-const FRANCE_ZOOM = 6;
+// Define Espoo as initial map center
+const ESPOO_CENTER = [60.18, 24.78]; // Center of Espoo, Finland
+const ESPOO_ZOOM = 13;
+
+// Color scale for ROI
+const getColorForROI = (roi) => {
+  if (!roi) return '#CCCCCC'; // gray for no data
+  
+  if (roi < 15) return '#1a9850'; // green (good)
+  if (roi < 18) return '#91cf60';
+  if (roi < 21) return '#d9ef8b';
+  if (roi < 24) return '#fee08b';
+  if (roi < 27) return '#fc8d59';
+  return '#d73027'; // red (poor)
+};
+
+// Style function for building outlines
+const buildingStyle = (feature, roi) => {
+  let fillColor = '#CCCCCC';
+  
+  // If we have ROI data for this building, color it accordingly
+  if (roi) {
+    fillColor = getColorForROI(roi);
+  }
+  
+  return {
+    fillColor: fillColor,
+    weight: 1,
+    opacity: 1,
+    color: '#666',
+    fillOpacity: 0.7
+  };
+};
+
+// Fit map bounds when GeoJSON data changes
+const GeoJsonUpdater = ({ data }) => {
+  const map = useMap();
+  
+  useEffect(() => {
+    if (data && data.features && data.features.length > 0) {
+      try {
+        const bounds = L.geoJSON(data).getBounds();
+        map.fitBounds(bounds);
+      } catch (e) {
+        console.error("Error fitting bounds:", e);
+      }
+    }
+  }, [data, map]);
+  
+  return null;
+};
 
 const Dashboard = () => {
   // State variables
@@ -37,10 +85,11 @@ const Dashboard = () => {
   const [regionStats, setRegionStats] = useState([]);
   const [propertyTypes, setPropertyTypes] = useState([]);
   const [sources, setSources] = useState([]);
+  const [buildings, setBuildings] = useState([]);
+  const [roiData, setRoiData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('map');
-  const [mapMode, setMapMode] = useState('markers'); // markers, heatmap, or choropleth
-  const [heatmapMetric, setHeatmapMetric] = useState('price'); // price, roi
+  const [mapMode, setMapMode] = useState('markers'); // markers, heatmap, or roi
   const [mapTooltip, setMapTooltip] = useState('');
   
   // Filter state
@@ -60,17 +109,37 @@ const Dashboard = () => {
   const [csvFile, setCsvFile] = useState(null);
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const [uploadError, setUploadError] = useState('');
+  const [dataImported, setDataImported] = useState(false);
   
-  // Modal state
-  const [showFiltersModal, setShowFiltersModal] = useState(false);
+  // GeoJSON state for buildings
+  const [buildingsGeoJson, setBuildingsGeoJson] = useState(null);
   
   // Load initial data
   useEffect(() => {
-    fetchProperties();
-    fetchRegionStats();
-    fetchPropertyTypes();
-    fetchSources();
+    importDefaultData();
   }, []);
+  
+  // Import default data
+  const importDefaultData = async () => {
+    setLoading(true);
+    try {
+      const response = await axios.post(`${API}/import-default-data`);
+      console.log('Default data imported:', response.data);
+      setDataImported(true);
+      
+      // Load data
+      fetchProperties();
+      fetchRegionStats();
+      fetchPropertyTypes();
+      fetchSources();
+      fetchBuildings();
+      fetchRoiAnalysis();
+    } catch (error) {
+      console.error('Error importing default data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
   
   // Fetch properties with filters
   const fetchProperties = async () => {
@@ -88,11 +157,6 @@ const Dashboard = () => {
       
       const response = await axios.get(`${API}/properties?${queryParams.toString()}`);
       setProperties(response.data);
-      
-      // Prepare data for heatmap
-      if (response.data.length > 0) {
-        // Additional data processing if needed
-      }
     } catch (error) {
       console.error('Error fetching properties:', error);
     } finally {
@@ -127,6 +191,41 @@ const Dashboard = () => {
       setSources(response.data);
     } catch (error) {
       console.error('Error fetching sources:', error);
+    }
+  };
+  
+  // Fetch building outlines from OpenStreetMap
+  const fetchBuildings = async () => {
+    try {
+      const response = await axios.get(`${API}/buildings`);
+      setBuildings(response.data);
+      
+      // Convert to GeoJSON format
+      const geojson = {
+        type: "FeatureCollection",
+        features: response.data.map(building => ({
+          type: "Feature",
+          geometry: building.geometry,
+          properties: {
+            ...building.properties,
+            id: building.id
+          }
+        }))
+      };
+      
+      setBuildingsGeoJson(geojson);
+    } catch (error) {
+      console.error('Error fetching buildings:', error);
+    }
+  };
+  
+  // Fetch ROI analysis data
+  const fetchRoiAnalysis = async () => {
+    try {
+      const response = await axios.get(`${API}/properties/roi-analysis`);
+      setRoiData(response.data);
+    } catch (error) {
+      console.error('Error fetching ROI data:', error);
     }
   };
   
@@ -166,6 +265,7 @@ const Dashboard = () => {
       fetchRegionStats();
       fetchPropertyTypes();
       fetchSources();
+      fetchRoiAnalysis();
       
       // Show success message
       setTimeout(() => {
@@ -190,7 +290,6 @@ const Dashboard = () => {
   // Apply filters
   const applyFilters = () => {
     fetchProperties();
-    setShowFiltersModal(false);
   };
   
   // Reset filters
@@ -216,10 +315,8 @@ const Dashboard = () => {
       const coords = property.location.coordinates;
       let intensity = 1;
       
-      // Adjust intensity based on selected metric
-      if (heatmapMetric === 'price') {
-        intensity = property.price / 10000; // Scale down prices for better visualization
-      }
+      // Adjust intensity based on price
+      intensity = property.price / 10000; // Scale down prices for better visualization
       
       return [
         coords[1], // latitude
@@ -227,6 +324,62 @@ const Dashboard = () => {
         intensity
       ];
     });
+  };
+  
+  // Prepare building-ROI data for choropleth map
+  const getBuildingRoiData = () => {
+    if (!buildingsGeoJson || !roiData || roiData.length === 0) {
+      return buildingsGeoJson;
+    }
+    
+    // Create a map of coordinates to ROI
+    const roiByCoords = {};
+    roiData.forEach(item => {
+      const key = `${item.coordinates[0]},${item.coordinates[1]}`;
+      roiByCoords[key] = item.roi_years;
+    });
+    
+    // Enhance building GeoJSON with ROI data
+    const enhancedFeatures = buildingsGeoJson.features.map(feature => {
+      // Try to find the nearest ROI data
+      let nearestRoi = null;
+      let minDistance = Number.MAX_VALUE;
+      
+      // Calculate center of the building polygon
+      const coords = feature.geometry.coordinates[0];
+      const center = coords.reduce(
+        (acc, curr) => [acc[0] + curr[0] / coords.length, acc[1] + curr[1] / coords.length], 
+        [0, 0]
+      );
+      
+      // Find the nearest property with ROI data
+      roiData.forEach(item => {
+        const propCoords = item.coordinates;
+        const distance = Math.sqrt(
+          Math.pow(center[0] - propCoords[0], 2) + 
+          Math.pow(center[1] - propCoords[1], 2)
+        );
+        
+        if (distance < minDistance && distance < 0.01) { // Within ~1km
+          minDistance = distance;
+          nearestRoi = item.roi_years;
+        }
+      });
+      
+      // Add ROI to properties
+      return {
+        ...feature,
+        properties: {
+          ...feature.properties,
+          roi: nearestRoi
+        }
+      };
+    });
+    
+    return {
+      ...buildingsGeoJson,
+      features: enhancedFeatures
+    };
   };
   
   // Prepare data for charts
@@ -265,32 +418,32 @@ const Dashboard = () => {
       ]
     };
     
-    // Price ranges bar chart
-    const priceRanges = {
-      '0-100k': 0,
-      '100k-200k': 0,
-      '200k-300k': 0,
+    // Price ranges bar chart for sale properties
+    const salePriceRanges = {
+      '0-150k': 0,
+      '150k-200k': 0,
+      '200k-250k': 0,
+      '250k-300k': 0,
       '300k-400k': 0,
-      '400k-500k': 0,
-      '500k+': 0
+      '400k+': 0
     };
     
-    properties.forEach(property => {
+    properties.filter(p => p.is_for_sale).forEach(property => {
       const price = property.price;
-      if (price < 100000) priceRanges['0-100k']++;
-      else if (price < 200000) priceRanges['100k-200k']++;
-      else if (price < 300000) priceRanges['200k-300k']++;
-      else if (price < 400000) priceRanges['300k-400k']++;
-      else if (price < 500000) priceRanges['400k-500k']++;
-      else priceRanges['500k+']++;
+      if (price < 150000) salePriceRanges['0-150k']++;
+      else if (price < 200000) salePriceRanges['150k-200k']++;
+      else if (price < 250000) salePriceRanges['200k-250k']++;
+      else if (price < 300000) salePriceRanges['250k-300k']++;
+      else if (price < 400000) salePriceRanges['300k-400k']++;
+      else salePriceRanges['400k+']++;
     });
     
     const priceRangeData = {
-      labels: Object.keys(priceRanges),
+      labels: Object.keys(salePriceRanges),
       datasets: [
         {
           label: 'Number of Properties',
-          data: Object.values(priceRanges),
+          data: Object.values(salePriceRanges),
           backgroundColor: '#36A2EB',
           borderColor: '#2980B9',
           borderWidth: 1
@@ -312,15 +465,8 @@ const Dashboard = () => {
       {/* Header */}
       <header className="bg-indigo-600 text-white p-4">
         <div className="container mx-auto flex justify-between items-center">
-          <h1 className="text-2xl font-bold">Location Intelligence Dashboard</h1>
+          <h1 className="text-2xl font-bold">Espoo Real Estate Dashboard</h1>
           <div className="flex space-x-2">
-            <button 
-              onClick={() => setShowFiltersModal(true)}
-              className="px-3 py-2 bg-indigo-700 rounded hover:bg-indigo-800 flex items-center"
-            >
-              <ChevronDownIcon className="h-4 w-4 mr-1" />
-              Filters
-            </button>
             <button 
               onClick={fetchProperties}
               className="px-3 py-2 bg-indigo-700 rounded hover:bg-indigo-800 flex items-center"
@@ -368,149 +514,322 @@ const Dashboard = () => {
         {/* Map View */}
         {activeTab === 'map' && (
           <div className="mt-4">
-            <div className="mb-4 flex space-x-2">
-              <div className="flex space-x-2">
-                <button 
-                  className={`px-3 py-1 rounded ${mapMode === 'markers' ? 'bg-indigo-100 text-indigo-800' : 'bg-gray-100'}`}
-                  onClick={() => setMapMode('markers')}
-                >
-                  Markers
-                </button>
-                <button 
-                  className={`px-3 py-1 rounded ${mapMode === 'heatmap' ? 'bg-indigo-100 text-indigo-800' : 'bg-gray-100'}`}
-                  onClick={() => setMapMode('heatmap')}
-                >
-                  Heat Map
-                </button>
-                <button 
-                  className={`px-3 py-1 rounded ${mapMode === 'choropleth' ? 'bg-indigo-100 text-indigo-800' : 'bg-gray-100'}`}
-                  onClick={() => setMapMode('choropleth')}
-                >
-                  Choropleth
-                </button>
+            <div className="grid grid-cols-12 gap-4">
+              {/* Filters Panel - Left Side */}
+              <div className="col-span-3 bg-white rounded shadow p-4">
+                <h3 className="font-bold text-lg mb-4">Filters</h3>
+                
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Property Type</label>
+                    <select
+                      value={filters.property_type}
+                      onChange={(e) => handleFilterChange('property_type', e.target.value)}
+                      className="w-full px-2 py-1 border rounded"
+                    >
+                      <option value="">All Types</option>
+                      {propertyTypes.map((type, index) => (
+                        <option key={index} value={type}>{type}</option>
+                      ))}
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Price Range</label>
+                    <div className="flex space-x-2">
+                      <input
+                        type="number"
+                        placeholder="Min"
+                        value={filters.price_min}
+                        onChange={(e) => handleFilterChange('price_min', e.target.value)}
+                        className="w-full px-2 py-1 border rounded"
+                      />
+                      <input
+                        type="number"
+                        placeholder="Max"
+                        value={filters.price_max}
+                        onChange={(e) => handleFilterChange('price_max', e.target.value)}
+                        className="w-full px-2 py-1 border rounded"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Area (m²)</label>
+                    <div className="flex space-x-2">
+                      <input
+                        type="number"
+                        placeholder="Min"
+                        value={filters.area_min}
+                        onChange={(e) => handleFilterChange('area_min', e.target.value)}
+                        className="w-full px-2 py-1 border rounded"
+                      />
+                      <input
+                        type="number"
+                        placeholder="Max"
+                        value={filters.area_max}
+                        onChange={(e) => handleFilterChange('area_max', e.target.value)}
+                        className="w-full px-2 py-1 border rounded"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Rooms</label>
+                    <div className="flex space-x-2">
+                      <input
+                        type="number"
+                        placeholder="Min"
+                        value={filters.rooms_min}
+                        onChange={(e) => handleFilterChange('rooms_min', e.target.value)}
+                        className="w-full px-2 py-1 border rounded"
+                      />
+                      <input
+                        type="number"
+                        placeholder="Max"
+                        value={filters.rooms_max}
+                        onChange={(e) => handleFilterChange('rooms_max', e.target.value)}
+                        className="w-full px-2 py-1 border rounded"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Listing Type</label>
+                    <select
+                      value={filters.is_for_sale === null ? '' : filters.is_for_sale ? 'sale' : 'rent'}
+                      onChange={(e) => {
+                        if (e.target.value === '') {
+                          handleFilterChange('is_for_sale', null);
+                        } else {
+                          handleFilterChange('is_for_sale', e.target.value === 'sale');
+                        }
+                      }}
+                      className="w-full px-2 py-1 border rounded"
+                    >
+                      <option value="">All</option>
+                      <option value="sale">For Sale</option>
+                      <option value="rent">For Rent</option>
+                    </select>
+                  </div>
+                  
+                  <div className="flex justify-end space-x-2 pt-4">
+                    <button 
+                      onClick={resetFilters}
+                      className="px-4 py-2 text-sm bg-gray-100 rounded hover:bg-gray-200"
+                    >
+                      Reset
+                    </button>
+                    <button 
+                      onClick={applyFilters}
+                      className="px-4 py-2 text-sm bg-indigo-600 text-white rounded hover:bg-indigo-700"
+                    >
+                      Apply Filters
+                    </button>
+                  </div>
+                </div>
               </div>
               
-              {mapMode === 'heatmap' && (
-                <div className="flex space-x-2">
-                  <button 
-                    className={`px-3 py-1 rounded ${heatmapMetric === 'price' ? 'bg-indigo-100 text-indigo-800' : 'bg-gray-100'}`}
-                    onClick={() => setHeatmapMetric('price')}
-                  >
-                    Price
-                  </button>
-                  <button 
-                    className={`px-3 py-1 rounded ${heatmapMetric === 'roi' ? 'bg-indigo-100 text-indigo-800' : 'bg-gray-100'}`}
-                    onClick={() => setHeatmapMetric('roi')}
-                  >
-                    ROI
-                  </button>
+              {/* Main Map Area - Center */}
+              <div className="col-span-6">
+                <div className="mb-4 flex justify-between items-center">
+                  <div className="flex space-x-2">
+                    <button 
+                      className={`px-3 py-1 rounded ${mapMode === 'markers' ? 'bg-indigo-100 text-indigo-800' : 'bg-gray-100'}`}
+                      onClick={() => setMapMode('markers')}
+                    >
+                      Markers
+                    </button>
+                    <button 
+                      className={`px-3 py-1 rounded ${mapMode === 'heatmap' ? 'bg-indigo-100 text-indigo-800' : 'bg-gray-100'}`}
+                      onClick={() => setMapMode('heatmap')}
+                    >
+                      Heat Map
+                    </button>
+                    <button 
+                      className={`px-3 py-1 rounded ${mapMode === 'roi' ? 'bg-indigo-100 text-indigo-800' : 'bg-gray-100'}`}
+                      onClick={() => setMapMode('roi')}
+                    >
+                      ROI Map
+                    </button>
+                  </div>
                 </div>
-              )}
-            </div>
-            
-            <div style={{ height: '70vh', width: '100%' }}>
-              <MapContainer 
-                center={FRANCE_CENTER} 
-                zoom={FRANCE_ZOOM} 
-                style={{ height: '100%', width: '100%' }}
-              >
-                <TileLayer
-                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                />
                 
-                {mapMode === 'markers' && properties.map((property, index) => (
-                  <Marker 
-                    key={property.id || index}
-                    position={[property.location.coordinates[1], property.location.coordinates[0]]}
+                <div style={{ height: '70vh', width: '100%' }}>
+                  <MapContainer 
+                    center={ESPOO_CENTER} 
+                    zoom={ESPOO_ZOOM} 
+                    style={{ height: '100%', width: '100%' }}
                   >
-                    <Popup>
-                      <div>
-                        <h3 className="font-bold">{property.title}</h3>
-                        <p className="text-lg">{property.price.toLocaleString()} {property.price_currency}</p>
-                        <p>{property.property_type} - {property.area} m²</p>
-                        <p>{property.rooms} rooms, {property.bathrooms} bathrooms</p>
-                        <p className="text-sm text-gray-500">{property.location.address}, {property.location.city}</p>
-                        <p className="text-sm text-gray-500">{property.source}</p>
-                        {property.url && (
-                          <a 
-                            href={property.url} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="text-blue-500 hover:underline"
-                          >
-                            View Listing
-                          </a>
-                        )}
+                    <TileLayer
+                      attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                      url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                    />
+                    
+                    {mapMode === 'markers' && properties.map((property, index) => (
+                      <Marker 
+                        key={property.id || index}
+                        position={[property.location.coordinates[1], property.location.coordinates[0]]}
+                      >
+                        <Popup>
+                          <div>
+                            <h3 className="font-bold">{property.title}</h3>
+                            <p className="text-lg">{property.price.toLocaleString()} {property.price_currency}</p>
+                            <p>{property.property_type} - {property.area} m²</p>
+                            <p className="text-sm text-gray-500">{property.location.address}</p>
+                            <p className="text-sm text-gray-500">
+                              {property.is_for_sale ? 'For Sale' : 'For Rent'}
+                            </p>
+                          </div>
+                        </Popup>
+                      </Marker>
+                    ))}
+                    
+                    {mapMode === 'heatmap' && (
+                      <Heatmap
+                        points={getHeatmapData()}
+                        longitudeExtractor={m => m[1]}
+                        latitudeExtractor={m => m[0]}
+                        intensityExtractor={m => m[2]}
+                        radius={20}
+                        max={10}
+                        minOpacity={0.2}
+                      />
+                    )}
+                    
+                    {mapMode === 'roi' && getBuildingRoiData() && (
+                      <GeoJSON 
+                        data={getBuildingRoiData()}
+                        style={(feature) => buildingStyle(feature, feature.properties.roi)}
+                        onEachFeature={(feature, layer) => {
+                          layer.on({
+                            mouseover: (e) => {
+                              const roi = feature.properties.roi;
+                              let popup = `<strong>${feature.properties.name || feature.properties.address || 'Building'}</strong><br/>`;
+                              
+                              if (roi) {
+                                popup += `ROI: ${roi.toFixed(1)} years`;
+                              } else {
+                                popup += 'No ROI data available';
+                              }
+                              
+                              layer.bindTooltip(popup).openTooltip();
+                            }
+                          });
+                        }}
+                      />
+                    )}
+                    
+                    {/* Update map bounds when GeoJSON data changes */}
+                    {mapMode === 'roi' && getBuildingRoiData() && (
+                      <GeoJsonUpdater data={getBuildingRoiData()} />
+                    )}
+                  </MapContainer>
+                </div>
+                
+                {mapMode === 'roi' && (
+                  <div className="mt-2 p-2 bg-gray-100 rounded flex items-center justify-center">
+                    <div className="flex items-center space-x-8">
+                      <span className="text-sm font-bold">ROI (years):</span>
+                      <div className="flex items-center space-x-1">
+                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#1a9850' }}></div>
+                        <span className="text-xs">&lt;15</span>
                       </div>
-                    </Popup>
-                  </Marker>
-                ))}
-                
-                {mapMode === 'heatmap' && (
-                  <Heatmap
-                    points={getHeatmapData()}
-                    longitudeExtractor={m => m[1]}
-                    latitudeExtractor={m => m[0]}
-                    intensityExtractor={m => m[2]}
-                    radius={20}
-                    max={10}
-                    minOpacity={0.2}
-                  />
-                )}
-                
-                {mapMode === 'choropleth' && regionStats.length > 0 && (
-                  <div className="absolute top-2 right-2 z-50 bg-white p-2 rounded shadow">
-                    <p className="text-sm font-bold">ROI by Region (Years)</p>
-                    <div className="flex flex-col space-y-1 mt-1">
-                      {regionStats.map((region, i) => (
-                        <div key={i} className="flex items-center space-x-2">
-                          <div className="w-3 h-3 rounded-full" style={{ backgroundColor: getColorForROI(region.roi_years) }}></div>
-                          <span className="text-xs">{region.region_name}: {region.roi_years ? region.roi_years.toFixed(1) : 'N/A'}</span>
-                        </div>
-                      ))}
+                      <div className="flex items-center space-x-1">
+                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#91cf60' }}></div>
+                        <span className="text-xs">15-18</span>
+                      </div>
+                      <div className="flex items-center space-x-1">
+                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#d9ef8b' }}></div>
+                        <span className="text-xs">18-21</span>
+                      </div>
+                      <div className="flex items-center space-x-1">
+                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#fee08b' }}></div>
+                        <span className="text-xs">21-24</span>
+                      </div>
+                      <div className="flex items-center space-x-1">
+                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#fc8d59' }}></div>
+                        <span className="text-xs">24-27</span>
+                      </div>
+                      <div className="flex items-center space-x-1">
+                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#d73027' }}></div>
+                        <span className="text-xs">&gt;27</span>
+                      </div>
                     </div>
                   </div>
                 )}
-              </MapContainer>
-            </div>
-            
-            {mapTooltip && (
-              <div className="mt-2 p-2 bg-gray-100 rounded text-sm">{mapTooltip}</div>
-            )}
-            
-            <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="bg-white rounded shadow p-4">
-                <h3 className="font-bold text-lg mb-2">Property Count</h3>
-                <p className="text-3xl font-bold text-indigo-600">{properties.length}</p>
               </div>
               
-              <div className="bg-white rounded shadow p-4">
-                <h3 className="font-bold text-lg mb-2">Average Sale Price</h3>
-                <p className="text-3xl font-bold text-indigo-600">
-                  {properties.length > 0 && properties.filter(p => p.is_for_sale).length > 0
-                    ? (properties
-                        .filter(p => p.is_for_sale)
-                        .reduce((sum, p) => sum + p.price, 0) / 
-                        properties.filter(p => p.is_for_sale).length
-                      ).toLocaleString('fr-FR', { maximumFractionDigits: 0 })
-                    : '0'
-                  } €
-                </p>
-              </div>
-              
-              <div className="bg-white rounded shadow p-4">
-                <h3 className="font-bold text-lg mb-2">Average Rental Price</h3>
-                <p className="text-3xl font-bold text-indigo-600">
-                  {properties.length > 0 && properties.filter(p => !p.is_for_sale).length > 0
-                    ? (properties
-                        .filter(p => !p.is_for_sale)
-                        .reduce((sum, p) => sum + p.price, 0) / 
-                        properties.filter(p => !p.is_for_sale).length
-                      ).toLocaleString('fr-FR', { maximumFractionDigits: 0 })
-                    : '0'
-                  } € /month
-                </p>
+              {/* Stats Panel - Right Side */}
+              <div className="col-span-3">
+                <div className="space-y-4">
+                  <div className="bg-white rounded shadow p-4">
+                    <h3 className="font-bold text-lg mb-2">Property Count</h3>
+                    <p className="text-3xl font-bold text-indigo-600">{properties.length}</p>
+                  </div>
+                  
+                  <div className="bg-white rounded shadow p-4">
+                    <h3 className="font-bold text-lg mb-2">Average Sale Price</h3>
+                    <p className="text-3xl font-bold text-indigo-600">
+                      {properties.length > 0 && properties.filter(p => p.is_for_sale).length > 0
+                        ? (properties
+                            .filter(p => p.is_for_sale)
+                            .reduce((sum, p) => sum + p.price, 0) / 
+                            properties.filter(p => p.is_for_sale).length
+                          ).toLocaleString('fi-FI', { maximumFractionDigits: 0 })
+                        : '0'
+                      } €
+                    </p>
+                  </div>
+                  
+                  <div className="bg-white rounded shadow p-4">
+                    <h3 className="font-bold text-lg mb-2">Average Rental Price</h3>
+                    <p className="text-3xl font-bold text-indigo-600">
+                      {properties.length > 0 && properties.filter(p => !p.is_for_sale).length > 0
+                        ? (properties
+                            .filter(p => !p.is_for_sale)
+                            .reduce((sum, p) => sum + p.price, 0) / 
+                            properties.filter(p => !p.is_for_sale).length
+                          ).toLocaleString('fi-FI', { maximumFractionDigits: 0 })
+                        : '0'
+                      } € /month
+                    </p>
+                  </div>
+                  
+                  <div className="bg-white rounded shadow p-4">
+                    <h3 className="font-bold text-lg mb-2">Average ROI</h3>
+                    <p className="text-3xl font-bold text-indigo-600">
+                      {roiData.length > 0
+                        ? (roiData.reduce((sum, item) => sum + item.roi_years, 0) / roiData.length)
+                            .toLocaleString('fi-FI', { maximumFractionDigits: 1 })
+                        : '0'
+                      } years
+                    </p>
+                  </div>
+                  
+                  <div className="bg-white rounded shadow p-4">
+                    <h3 className="font-bold text-lg mb-2">Property Types</h3>
+                    <div style={{ height: '150px' }}>
+                      <Pie 
+                        data={propertyTypeData} 
+                        options={{
+                          maintainAspectRatio: false,
+                          plugins: {
+                            legend: {
+                              position: 'right',
+                              labels: {
+                                boxWidth: 10,
+                                font: {
+                                  size: 10
+                                }
+                              }
+                            }
+                          }
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -520,43 +839,32 @@ const Dashboard = () => {
         {activeTab === 'analytics' && (
           <div className="mt-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Region Statistics */}
+              {/* ROI Analysis */}
               <div className="bg-white rounded shadow p-4">
-                <h3 className="font-bold text-lg mb-4">Return on Investment by Region</h3>
+                <h3 className="font-bold text-lg mb-4">Return on Investment Analysis</h3>
                 <div className="overflow-auto max-h-96">
                   <table className="min-w-full">
                     <thead>
                       <tr className="bg-gray-100">
-                        <th className="px-4 py-2 text-left">Region</th>
+                        <th className="px-4 py-2 text-left">Address</th>
                         <th className="px-4 py-2 text-right">Avg. Sale Price</th>
                         <th className="px-4 py-2 text-right">Avg. Rent (Monthly)</th>
                         <th className="px-4 py-2 text-right">ROI (Years)</th>
-                        <th className="px-4 py-2 text-right">Properties</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {regionStats.sort((a, b) => (a.roi_years || 999) - (b.roi_years || 999)).map((region, index) => (
+                      {roiData.sort((a, b) => a.roi_years - b.roi_years).map((item, index) => (
                         <tr key={index} className={index % 2 === 0 ? 'bg-gray-50' : ''}>
-                          <td className="px-4 py-2">{region.region_name}</td>
+                          <td className="px-4 py-2">{item.address}</td>
                           <td className="px-4 py-2 text-right">
-                            {region.avg_sale_price 
-                              ? region.avg_sale_price.toLocaleString('fr-FR', { maximumFractionDigits: 0 }) + ' €' 
-                              : '-'
-                            }
+                            {item.avg_sale_price.toLocaleString('fi-FI', { maximumFractionDigits: 0 })} €
                           </td>
                           <td className="px-4 py-2 text-right">
-                            {region.avg_rent_price 
-                              ? region.avg_rent_price.toLocaleString('fr-FR', { maximumFractionDigits: 0 }) + ' €' 
-                              : '-'
-                            }
+                            {item.avg_monthly_rent.toLocaleString('fi-FI', { maximumFractionDigits: 0 })} €
                           </td>
                           <td className="px-4 py-2 text-right">
-                            {region.roi_years 
-                              ? region.roi_years.toFixed(1) 
-                              : '-'
-                            }
+                            {item.roi_years.toFixed(1)}
                           </td>
-                          <td className="px-4 py-2 text-right">{region.property_count}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -584,7 +892,7 @@ const Dashboard = () => {
               
               {/* Price Range Distribution */}
               <div className="bg-white rounded shadow p-4 col-span-1 md:col-span-2">
-                <h3 className="font-bold text-lg mb-4">Price Range Distribution</h3>
+                <h3 className="font-bold text-lg mb-4">Price Range Distribution (Sales)</h3>
                 <div style={{ height: '300px' }}>
                   <Bar
                     data={priceRangeData}
@@ -620,8 +928,8 @@ const Dashboard = () => {
               <div className="bg-white rounded shadow p-4">
                 <h3 className="font-bold text-lg mb-4">Upload CSV Data</h3>
                 <p className="mb-4 text-gray-600">
-                  Upload a CSV file containing property data. The file should include columns for title, price, property type, 
-                  location information (latitude, longitude, address, etc.), and listing type (sale/rent).
+                  Upload a CSV file containing property data. The file should include columns for address, price, 
+                  property type (rooms), location information (lat, lng), and square meters.
                 </p>
                 
                 <div className="mb-4">
@@ -662,257 +970,36 @@ const Dashboard = () => {
                 )}
               </div>
               
-              {/* Sample CSV Template */}
+              {/* Import Default Data */}
               <div className="bg-white rounded shadow p-4">
-                <h3 className="font-bold text-lg mb-4">CSV Template</h3>
+                <h3 className="font-bold text-lg mb-4">Import Sample Data</h3>
                 <p className="mb-4 text-gray-600">
-                  Use this template for your CSV file. The minimum required fields are title, price, latitude, and longitude.
+                  Import the sample dataset of Espoo properties. This includes both sales and rental data,
+                  with information about property prices, locations, and characteristics.
                 </p>
                 
-                <div className="overflow-auto max-h-64 border rounded">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">title</th>
-                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">price</th>
-                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">currency</th>
-                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">property_type</th>
-                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">area</th>
-                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">rooms</th>
-                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">bathrooms</th>
-                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">latitude</th>
-                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">longitude</th>
-                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">address</th>
-                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">city</th>
-                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">region</th>
-                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">postal_code</th>
-                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">listing_type</th>
-                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">source</th>
-                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">url</th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      <tr>
-                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">Apartment in Paris</td>
-                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">250000</td>
-                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">EUR</td>
-                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">Apartment</td>
-                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">75</td>
-                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">3</td>
-                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">1</td>
-                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">48.8566</td>
-                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">2.3522</td>
-                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">123 Rue Example</td>
-                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">Paris</td>
-                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">Île-de-France</td>
-                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">75001</td>
-                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">sale</td>
-                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">leboncoin</td>
-                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">https://example.com/listing/123</td>
-                      </tr>
-                      <tr>
-                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">Studio for rent</td>
-                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">800</td>
-                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">EUR</td>
-                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">Studio</td>
-                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">30</td>
-                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">1</td>
-                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">1</td>
-                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">48.8744</td>
-                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">2.3526</td>
-                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">456 Blvd Sample</td>
-                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">Paris</td>
-                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">Île-de-France</td>
-                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">75002</td>
-                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">rent</td>
-                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">idealista</td>
-                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">https://example.com/listing/456</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-                
                 <button
-                  onClick={() => {
-                    // Create CSV content
-                    const csvContent = [
-                      'title,price,currency,property_type,area,rooms,bathrooms,latitude,longitude,address,city,region,postal_code,listing_type,source,url',
-                      'Apartment in Paris,250000,EUR,Apartment,75,3,1,48.8566,2.3522,123 Rue Example,Paris,Île-de-France,75001,sale,leboncoin,https://example.com/listing/123',
-                      'Studio for rent,800,EUR,Studio,30,1,1,48.8744,2.3526,456 Blvd Sample,Paris,Île-de-France,75002,rent,idealista,https://example.com/listing/456'
-                    ].join('\n');
-                    
-                    // Create and download the CSV file
-                    const blob = new Blob([csvContent], { type: 'text/csv' });
-                    const url = window.URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.setAttribute('hidden', '');
-                    a.setAttribute('href', url);
-                    a.setAttribute('download', 'property_template.csv');
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                  }}
-                  className="mt-4 bg-gray-100 text-gray-700 px-4 py-2 rounded hover:bg-gray-200"
+                  onClick={importDefaultData}
+                  disabled={loading}
+                  className={`bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 flex items-center 
+                    ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
-                  Download Template
+                  <ArrowUpTrayIcon className="h-5 w-5 mr-2" />
+                  {loading ? 'Importing...' : 'Import Sample Data'}
                 </button>
+                
+                {dataImported && (
+                  <div className="mt-4 p-2 bg-green-100 text-green-800 rounded">
+                    Sample data imported successfully!
+                  </div>
+                )}
               </div>
             </div>
           </div>
         )}
       </main>
-      
-      {/* Filters Modal */}
-      {showFiltersModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-lg">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="font-bold text-lg">Filter Properties</h3>
-              <button onClick={() => setShowFiltersModal(false)}>
-                <XMarkIcon className="h-5 w-5 text-gray-500" />
-              </button>
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Price Range</label>
-                <div className="flex space-x-2">
-                  <input
-                    type="number"
-                    placeholder="Min"
-                    value={filters.price_min}
-                    onChange={(e) => handleFilterChange('price_min', e.target.value)}
-                    className="w-full px-2 py-1 border rounded"
-                  />
-                  <input
-                    type="number"
-                    placeholder="Max"
-                    value={filters.price_max}
-                    onChange={(e) => handleFilterChange('price_max', e.target.value)}
-                    className="w-full px-2 py-1 border rounded"
-                  />
-                </div>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Property Type</label>
-                <select
-                  value={filters.property_type}
-                  onChange={(e) => handleFilterChange('property_type', e.target.value)}
-                  className="w-full px-2 py-1 border rounded"
-                >
-                  <option value="">All Types</option>
-                  {propertyTypes.map((type, index) => (
-                    <option key={index} value={type}>{type}</option>
-                  ))}
-                </select>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Area (m²)</label>
-                <div className="flex space-x-2">
-                  <input
-                    type="number"
-                    placeholder="Min"
-                    value={filters.area_min}
-                    onChange={(e) => handleFilterChange('area_min', e.target.value)}
-                    className="w-full px-2 py-1 border rounded"
-                  />
-                  <input
-                    type="number"
-                    placeholder="Max"
-                    value={filters.area_max}
-                    onChange={(e) => handleFilterChange('area_max', e.target.value)}
-                    className="w-full px-2 py-1 border rounded"
-                  />
-                </div>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Rooms</label>
-                <div className="flex space-x-2">
-                  <input
-                    type="number"
-                    placeholder="Min"
-                    value={filters.rooms_min}
-                    onChange={(e) => handleFilterChange('rooms_min', e.target.value)}
-                    className="w-full px-2 py-1 border rounded"
-                  />
-                  <input
-                    type="number"
-                    placeholder="Max"
-                    value={filters.rooms_max}
-                    onChange={(e) => handleFilterChange('rooms_max', e.target.value)}
-                    className="w-full px-2 py-1 border rounded"
-                  />
-                </div>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Listing Type</label>
-                <select
-                  value={filters.is_for_sale === null ? '' : filters.is_for_sale ? 'sale' : 'rent'}
-                  onChange={(e) => {
-                    if (e.target.value === '') {
-                      handleFilterChange('is_for_sale', null);
-                    } else {
-                      handleFilterChange('is_for_sale', e.target.value === 'sale');
-                    }
-                  }}
-                  className="w-full px-2 py-1 border rounded"
-                >
-                  <option value="">All</option>
-                  <option value="sale">For Sale</option>
-                  <option value="rent">For Rent</option>
-                </select>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Source</label>
-                <select
-                  value={filters.source}
-                  onChange={(e) => handleFilterChange('source', e.target.value)}
-                  className="w-full px-2 py-1 border rounded"
-                >
-                  <option value="">All Sources</option>
-                  {sources.map((source, index) => (
-                    <option key={index} value={source}>{source}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-            
-            <div className="flex justify-end space-x-2 mt-6">
-              <button 
-                onClick={resetFilters}
-                className="px-4 py-2 bg-gray-100 rounded hover:bg-gray-200"
-              >
-                Reset
-              </button>
-              <button 
-                onClick={applyFilters}
-                className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
-              >
-                Apply Filters
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
-};
-
-// Helper function to get color for ROI values (for choropleth map)
-const getColorForROI = (roi) => {
-  if (!roi) return '#CCCCCC'; // gray for no data
-  
-  if (roi < 10) return '#1a9850'; // green (good)
-  if (roi < 15) return '#91cf60';
-  if (roi < 20) return '#d9ef8b';
-  if (roi < 25) return '#fee08b';
-  if (roi < 30) return '#fc8d59';
-  return '#d73027'; // red (poor)
 };
 
 function App() {

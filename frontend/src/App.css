@@ -22,6 +22,7 @@ body {
 .leaflet-container {
   border-radius: 0.375rem;
   overflow: hidden;
+  z-index: 0;
 }
 
 .leaflet-popup-content-wrapper {
@@ -33,6 +34,15 @@ body {
   margin: 0;
   padding: 1rem;
   min-width: 200px;
+}
+
+.leaflet-tooltip {
+  background-color: rgba(255, 255, 255, 0.9);
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  padding: 6px 8px;
+  font-size: 12px;
 }
 
 /* Filter styles */
@@ -69,6 +79,31 @@ tr:nth-child(even) {
 
 .fade-in {
   animation: fadein 0.3s;
+}
+
+/* ROI color indicators */
+.roi-green {
+  background-color: #1a9850;
+}
+
+.roi-light-green {
+  background-color: #91cf60;
+}
+
+.roi-yellow-green {
+  background-color: #d9ef8b;
+}
+
+.roi-yellow {
+  background-color: #fee08b;
+}
+
+.roi-orange {
+  background-color: #fc8d59;
+}
+
+.roi-red {
+  background-color: #d73027;
 }
 
 /* Date picker styles */
