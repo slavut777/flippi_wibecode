@@ -20,6 +20,7 @@ import re
 import asyncio
 from aiohttp import ClientSession
 import csv
+import overpy
 
 # Root directory and environment variables
 ROOT_DIR = Path(__file__).parent
@@ -84,6 +85,11 @@ class RegionData(BaseModel):
     roi_years: Optional[float] = None
     property_count: int = 0
 
+class Building(BaseModel):
+    id: str
+    geometry: Dict[str, Any]
+    properties: Dict[str, Any]
+
 # Utils for parsing CSV
 def parse_csv_to_properties(csv_content):
     try:
@@ -94,8 +100,8 @@ def parse_csv_to_properties(csv_content):
         
         for _, row in df.iterrows():
             # Extract coordinates
-            lat = row.get('latitude', None)
-            lng = row.get('longitude', None)
+            lat = row.get('lat', None)
+            lng = row.get('lng', None)
             
             if pd.isna(lat) or pd.isna(lng):
                 # Skip entries without valid coordinates
@@ -108,19 +114,19 @@ def parse_csv_to_properties(csv_content):
             
             # Create property object
             property_data = {
-                "title": row.get('title', 'Unnamed Property'),
+                "title": row.get('address', 'Unnamed Property'),
                 "price": float(row.get('price', 0)),
                 "price_currency": row.get('currency', 'EUR'),
-                "property_type": row.get('property_type', 'Unknown'),
-                "area": float(row.get('area', 0)) if not pd.isna(row.get('area', None)) else None,
+                "property_type": f"{row.get('rooms', 0)} Room",
+                "area": float(row.get('square_meters', 0)) if not pd.isna(row.get('square_meters', None)) else None,
                 "rooms": int(row.get('rooms', 0)) if not pd.isna(row.get('rooms', None)) else None,
                 "bathrooms": int(row.get('bathrooms', 0)) if not pd.isna(row.get('bathrooms', None)) else None,
                 "location": {
                     "type": "Point",
                     "coordinates": [float(lng), float(lat)],
                     "address": row.get('address', ''),
-                    "city": row.get('city', ''),
-                    "region": row.get('region', ''),
+                    "city": "Espoo",
+                    "region": "Espoo",
                     "postal_code": row.get('postal_code', '')
                 },
                 "source": row.get('source', 'csv_import'),
@@ -141,6 +147,55 @@ def parse_csv_to_properties(csv_content):
     except Exception as e:
         logging.error(f"Error parsing CSV: {str(e)}")
         raise HTTPException(status_code=400, detail=f"Error parsing CSV file: {str(e)}")
+
+# Utility function to fetch building outlines from OpenStreetMap
+async def fetch_buildings_from_osm(south, west, north, east):
+    try:
+        # Create Overpass API query for buildings in Espoo
+        api = overpy.Overpass()
+        query = f"""
+        [out:json];
+        (
+          way["building"]({south},{west},{north},{east});
+          relation["building"]({south},{west},{north},{east});
+        );
+        out body;
+        >;
+        out skel qt;
+        """
+        
+        # Run query
+        result = api.query(query)
+        
+        # Process the ways (buildings)
+        buildings = []
+        for way in result.ways:
+            if way.tags.get("building"):
+                # Extract coordinates
+                coords = [[float(node.lon), float(node.lat)] for node in way.nodes]
+                
+                # Only include if the polygon is closed
+                if len(coords) > 2 and coords[0] == coords[-1]:
+                    building = {
+                        "id": way.id,
+                        "geometry": {
+                            "type": "Polygon",
+                            "coordinates": [coords]
+                        },
+                        "properties": {
+                            "name": way.tags.get("name", ""),
+                            "building_type": way.tags.get("building", "yes"),
+                            "levels": way.tags.get("building:levels", ""),
+                            "height": way.tags.get("height", ""),
+                            "address": way.tags.get("addr:street", "") + " " + way.tags.get("addr:housenumber", "")
+                        }
+                    }
+                    buildings.append(building)
+        
+        return buildings
+    except Exception as e:
+        logging.error(f"Error fetching buildings from OSM: {str(e)}")
+        return []
 
 # Add routes to the router
 @api_router.get("/")
@@ -166,6 +221,45 @@ async def upload_csv(file: UploadFile = File(...)):
     except Exception as e:
         logging.error(f"Error processing CSV file: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error processing CSV file: {str(e)}")
+
+# Direct import of the provided CSV files
+@api_router.post("/import-default-data")
+async def import_default_data():
+    try:
+        # Delete existing data
+        await db.properties.delete_many({})
+        
+        # Import sales data
+        with open('/app/sales_data.csv', 'r') as f:
+            sales_content = f.read().encode('utf-8')
+            sales_properties = parse_csv_to_properties(sales_content)
+            
+            # Mark as sales
+            for prop in sales_properties:
+                prop["is_for_sale"] = True
+                prop["source"] = "sales_data"
+            
+            if sales_properties:
+                await db.properties.insert_many(sales_properties)
+        
+        # Import rental data
+        with open('/app/rental_data.csv', 'r') as f:
+            rental_content = f.read().encode('utf-8')
+            rental_properties = parse_csv_to_properties(rental_content)
+            
+            # Mark as rentals
+            for prop in rental_properties:
+                prop["is_for_sale"] = False
+                prop["source"] = "rental_data"
+            
+            if rental_properties:
+                await db.properties.insert_many(rental_properties)
+        
+        total_count = len(sales_properties) + len(rental_properties)
+        return {"message": f"Successfully imported {total_count} properties ({len(sales_properties)} sales, {len(rental_properties)} rentals)"}
+    except Exception as e:
+        logging.error(f"Error importing default data: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error importing default data: {str(e)}")
 
 # Get all properties with optional filtering
 @api_router.get("/properties")
@@ -384,32 +478,63 @@ async def get_sources():
     
     return sources
 
-# Web scraping routes
-@api_router.post("/scrape/leboncoin")
-async def scrape_leboncoin(query: str = Form(...), limit: int = Form(10)):
-    try:
-        # Here we would normally implement the scraping logic for leboncoin
-        # This is a placeholder implementation
-        
-        # As this is a demo, we'll return a mock error since web scraping
-        # requires more complex implementation with CAPTCHA handling, etc.
-        return {"message": "Scraping from leboncoin is not implemented. Please use CSV import instead."}
-    except Exception as e:
-        logging.error(f"Error scraping leboncoin: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error scraping data: {str(e)}")
+# Get building outlines from OpenStreetMap
+@api_router.get("/buildings")
+async def get_buildings(
+    south: float = 60.10,
+    west: float = 24.60,
+    north: float = 60.25,
+    east: float = 24.90
+):
+    buildings = await fetch_buildings_from_osm(south, west, north, east)
+    return buildings
 
-@api_router.post("/scrape/idealista")
-async def scrape_idealista(query: str = Form(...), limit: int = Form(10)):
-    try:
-        # Here we would implement the scraping logic for idealista
-        # This is a placeholder implementation
-        
-        # As this is a demo, we'll return a mock error since web scraping
-        # requires more complex implementation with CAPTCHA handling, etc.
-        return {"message": "Scraping from idealista is not implemented. Please use CSV import instead."}
-    except Exception as e:
-        logging.error(f"Error scraping idealista: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error scraping data: {str(e)}")
+# ROI analysis by building
+@api_router.get("/properties/roi-analysis")
+async def get_roi_analysis():
+    # Get all properties
+    sale_properties = await get_properties(is_for_sale=True)
+    rental_properties = await get_properties(is_for_sale=False)
+    
+    # Calculate ROI for each location
+    roi_data = []
+    
+    # Group properties by coordinates
+    coords_map = {}
+    
+    # Process sale properties
+    for prop in sale_properties:
+        coords = tuple(prop["location"]["coordinates"])
+        if coords not in coords_map:
+            coords_map[coords] = {"sales": [], "rentals": []}
+        coords_map[coords]["sales"].append(prop)
+    
+    # Process rental properties
+    for prop in rental_properties:
+        coords = tuple(prop["location"]["coordinates"])
+        if coords not in coords_map:
+            coords_map[coords] = {"sales": [], "rentals": []}
+        coords_map[coords]["rentals"].append(prop)
+    
+    # Calculate ROI for each location
+    for coords, data in coords_map.items():
+        if data["sales"] and data["rentals"]:
+            avg_sale_price = sum(p["price"] for p in data["sales"]) / len(data["sales"])
+            avg_monthly_rent = sum(p["price"] for p in data["rentals"]) / len(data["rentals"])
+            annual_rent = avg_monthly_rent * 12
+            
+            if annual_rent > 0:
+                roi_years = avg_sale_price / annual_rent
+                
+                roi_data.append({
+                    "coordinates": list(coords),
+                    "avg_sale_price": avg_sale_price,
+                    "avg_monthly_rent": avg_monthly_rent,
+                    "roi_years": roi_years,
+                    "address": data["sales"][0]["location"]["address"] if data["sales"] else data["rentals"][0]["location"]["address"]
+                })
+    
+    return roi_data
 
 # Include the router in the main app
 app.include_router(api_router)
