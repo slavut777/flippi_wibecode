@@ -107,7 +107,7 @@ class EspooRealEstateTester:
         return self.run_test(
             "Get ROI Analysis",
             "GET",
-            "api/properties/roi-analysis",
+            "api/roi-analysis",
             200
         )
 
