@@ -607,11 +607,11 @@ const Dashboard = () => {
   return (
     <div className="dashboard">
       {/* Header */}
-      <header className="glass-header text-white p-4 sticky top-0 z-10">
+      <header className="glass-header p-4 sticky top-0 z-10">
         <div className="container mx-auto flex justify-between items-center">
           <div className="flex items-center">
             <img src="/flippi-logo.svg" alt="Flippi Logo" className="flippi-logo" />
-            <h1 className="text-2xl font-bold">Flippi Dashboard</h1>
+            <h1 className="text-2xl font-bold text-gray-800">Flippi Dashboard</h1>
           </div>
           <div className="flex space-x-2">
             <button 
