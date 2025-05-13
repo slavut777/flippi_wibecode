@@ -501,49 +501,76 @@ async def get_buildings(
 # ROI analysis by building
 @api_router.get("/properties/roi-analysis")
 async def get_roi_analysis():
-    # Get all properties
-    sale_properties = await get_properties(is_for_sale=True)
-    rental_properties = await get_properties(is_for_sale=False)
-    
-    # Calculate ROI for each location
-    roi_data = []
-    
-    # Group properties by coordinates
-    coords_map = {}
-    
-    # Process sale properties
-    for prop in sale_properties:
-        coords = tuple(prop["location"]["coordinates"])
-        if coords not in coords_map:
-            coords_map[coords] = {"sales": [], "rentals": []}
-        coords_map[coords]["sales"].append(prop)
-    
-    # Process rental properties
-    for prop in rental_properties:
-        coords = tuple(prop["location"]["coordinates"])
-        if coords not in coords_map:
-            coords_map[coords] = {"sales": [], "rentals": []}
-        coords_map[coords]["rentals"].append(prop)
-    
-    # Calculate ROI for each location
-    for coords, data in coords_map.items():
-        if data["sales"] and data["rentals"]:
-            avg_sale_price = sum(p["price"] for p in data["sales"]) / len(data["sales"])
-            avg_monthly_rent = sum(p["price"] for p in data["rentals"]) / len(data["rentals"])
-            annual_rent = avg_monthly_rent * 12
-            
-            if annual_rent > 0:
-                roi_years = avg_sale_price / annual_rent
+    try:
+        logging.info("Fetching ROI analysis data")
+        
+        # Get all properties
+        sale_properties = []
+        rent_properties = []
+        
+        # Fetch sales properties
+        sale_cursor = db.properties.find({"is_for_sale": True})
+        async for doc in sale_cursor:
+            if '_id' in doc:
+                doc['_id'] = str(doc['_id'])
+            sale_properties.append(doc)
+        
+        logging.info(f"Found {len(sale_properties)} sales properties")
+        
+        # Fetch rental properties
+        rent_cursor = db.properties.find({"is_for_sale": False})
+        async for doc in rent_cursor:
+            if '_id' in doc:
+                doc['_id'] = str(doc['_id'])
+            rent_properties.append(doc)
+        
+        logging.info(f"Found {len(rent_properties)} rental properties")
+        
+        # Calculate ROI for each location
+        roi_data = []
+        
+        # Group properties by coordinates
+        coords_map = {}
+        
+        # Process sale properties
+        for prop in sale_properties:
+            coords = tuple(prop["location"]["coordinates"])
+            if coords not in coords_map:
+                coords_map[coords] = {"sales": [], "rentals": []}
+            coords_map[coords]["sales"].append(prop)
+        
+        # Process rental properties
+        for prop in rent_properties:
+            coords = tuple(prop["location"]["coordinates"])
+            if coords not in coords_map:
+                coords_map[coords] = {"sales": [], "rentals": []}
+            coords_map[coords]["rentals"].append(prop)
+        
+        logging.info(f"Found {len(coords_map)} unique coordinate pairs with properties")
+        
+        # Calculate ROI for each location
+        for coords, data in coords_map.items():
+            if data["sales"] and data["rentals"]:
+                avg_sale_price = sum(p["price"] for p in data["sales"]) / len(data["sales"])
+                avg_monthly_rent = sum(p["price"] for p in data["rentals"]) / len(data["rentals"])
+                annual_rent = avg_monthly_rent * 12
                 
-                roi_data.append({
-                    "coordinates": list(coords),
-                    "avg_sale_price": avg_sale_price,
-                    "avg_monthly_rent": avg_monthly_rent,
-                    "roi_years": roi_years,
-                    "address": data["sales"][0]["location"]["address"] if data["sales"] else data["rentals"][0]["location"]["address"]
-                })
-    
-    return roi_data
+                if annual_rent > 0:
+                    roi_years = avg_sale_price / annual_rent
+                    
+                    roi_data.append({
+                        "coordinates": list(coords),
+                        "avg_sale_price": avg_sale_price,
+                        "avg_monthly_rent": avg_monthly_rent,
+                        "roi_years": roi_years,
+                        "address": data["sales"][0]["location"]["address"] if data["sales"] else data["rentals"][0]["location"]["address"]
+                    })
+        
+        logging.info(f"Generated ROI analysis for {len(roi_data)} locations")
+        return roi_data
+    except Exception as e:
+        logging.error(f"Error generating ROI analysis: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error generating ROI analysis: {str(e)}")
 
 # Include the router in the main app
 app.include_router(api_router)
