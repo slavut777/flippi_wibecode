@@ -1180,7 +1180,7 @@ const Dashboard = () => {
               </div>
               
               {/* Import Default Data */}
-              <div className="bg-white rounded shadow p-4">
+              <div className="glass-card p-4">
                 <h3 className="font-bold text-lg mb-4">Import Sample Data</h3>
                 <p className="mb-4 text-gray-600">
                   Import the sample dataset of Espoo properties. This includes both sales and rental data,
@@ -1190,7 +1190,7 @@ const Dashboard = () => {
                 <button
                   onClick={importDefaultData}
                   disabled={loading}
-                  className={`bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 flex items-center 
+                  className={`glass-button px-4 py-2 rounded flex items-center 
                     ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
                   <ArrowUpTrayIcon className="h-5 w-5 mr-2" />
