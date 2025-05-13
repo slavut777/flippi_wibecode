@@ -1016,13 +1016,17 @@ const Dashboard = () => {
                   
                   <div className="bg-white rounded shadow p-4">
                     <h3 className="font-bold text-lg mb-2">Average ROI</h3>
-                    <p className="text-3xl font-bold text-indigo-600">
-                      {roiData.length > 0
-                        ? (roiData.reduce((sum, item) => sum + item.roi_years, 0) / roiData.length)
-                            .toLocaleString('fi-FI', { maximumFractionDigits: 1 })
-                        : '0'
-                      } years
-                    </p>
+                    {loading ? (
+                      <p className="text-gray-500">Loading...</p>
+                    ) : (
+                      <p className="text-3xl font-bold text-indigo-600">
+                        {roiData.length > 0
+                          ? (roiData.reduce((sum, item) => sum + item.roi_years, 0) / roiData.length)
+                              .toLocaleString('fi-FI', { maximumFractionDigits: 1 })
+                          : '0'
+                        } years
+                      </p>
+                    )}
                   </div>
                   
                   <div className="bg-white rounded shadow p-4">
