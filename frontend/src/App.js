@@ -663,16 +663,16 @@ const Dashboard = () => {
           <div className="mt-4">
             <div className="grid grid-cols-12 gap-4">
               {/* Filters Panel - Left Side */}
-              <div className="col-span-3 bg-white rounded shadow p-4">
+              <div className="col-span-3 glass-card p-4">
                 <h3 className="font-bold text-lg mb-4">Filters</h3>
                 
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Property Type</label>
+                    <label className="block text-sm font-medium text-gray-300 mb-1">Property Type</label>
                     <select
                       value={filters.property_type}
                       onChange={(e) => handleFilterChange('property_type', e.target.value)}
-                      className="w-full px-2 py-1 border rounded"
+                      className="glass-input w-full px-3 py-2 rounded"
                     >
                       <option value="">All Types</option>
                       {propertyTypes.map((type, index) => (
@@ -682,67 +682,67 @@ const Dashboard = () => {
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Price Range</label>
+                    <label className="block text-sm font-medium text-gray-300 mb-1">Price Range</label>
                     <div className="flex space-x-2">
                       <input
                         type="number"
                         placeholder="Min"
                         value={filters.price_min}
                         onChange={(e) => handleFilterChange('price_min', e.target.value)}
-                        className="w-full px-2 py-1 border rounded"
+                        className="glass-input w-full px-3 py-2 rounded"
                       />
                       <input
                         type="number"
                         placeholder="Max"
                         value={filters.price_max}
                         onChange={(e) => handleFilterChange('price_max', e.target.value)}
-                        className="w-full px-2 py-1 border rounded"
+                        className="glass-input w-full px-3 py-2 rounded"
                       />
                     </div>
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Area (m²)</label>
+                    <label className="block text-sm font-medium text-gray-300 mb-1">Area (m²)</label>
                     <div className="flex space-x-2">
                       <input
                         type="number"
                         placeholder="Min"
                         value={filters.area_min}
                         onChange={(e) => handleFilterChange('area_min', e.target.value)}
-                        className="w-full px-2 py-1 border rounded"
+                        className="glass-input w-full px-3 py-2 rounded"
                       />
                       <input
                         type="number"
                         placeholder="Max"
                         value={filters.area_max}
                         onChange={(e) => handleFilterChange('area_max', e.target.value)}
-                        className="w-full px-2 py-1 border rounded"
+                        className="glass-input w-full px-3 py-2 rounded"
                       />
                     </div>
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Rooms</label>
+                    <label className="block text-sm font-medium text-gray-300 mb-1">Rooms</label>
                     <div className="flex space-x-2">
                       <input
                         type="number"
                         placeholder="Min"
                         value={filters.rooms_min}
                         onChange={(e) => handleFilterChange('rooms_min', e.target.value)}
-                        className="w-full px-2 py-1 border rounded"
+                        className="glass-input w-full px-3 py-2 rounded"
                       />
                       <input
                         type="number"
                         placeholder="Max"
                         value={filters.rooms_max}
                         onChange={(e) => handleFilterChange('rooms_max', e.target.value)}
-                        className="w-full px-2 py-1 border rounded"
+                        className="glass-input w-full px-3 py-2 rounded"
                       />
                     </div>
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Listing Type</label>
+                    <label className="block text-sm font-medium text-gray-300 mb-1">Listing Type</label>
                     <select
                       value={filters.is_for_sale === null ? '' : filters.is_for_sale ? 'sale' : 'rent'}
                       onChange={(e) => {
@@ -752,7 +752,7 @@ const Dashboard = () => {
                           handleFilterChange('is_for_sale', e.target.value === 'sale');
                         }
                       }}
-                      className="w-full px-2 py-1 border rounded"
+                      className="glass-input w-full px-3 py-2 rounded"
                     >
                       <option value="">All</option>
                       <option value="sale">For Sale</option>
@@ -763,13 +763,13 @@ const Dashboard = () => {
                   <div className="flex justify-end space-x-2 pt-4">
                     <button 
                       onClick={resetFilters}
-                      className="px-4 py-2 text-sm bg-gray-100 rounded hover:bg-gray-200"
+                      className="glass-button px-4 py-2 text-sm rounded"
                     >
                       Reset
                     </button>
                     <button 
                       onClick={applyFilters}
-                      className="px-4 py-2 text-sm bg-indigo-600 text-white rounded hover:bg-indigo-700"
+                      className="glass-button px-4 py-2 text-sm rounded"
                     >
                       Apply Filters
                     </button>
