@@ -222,7 +222,7 @@ const Dashboard = () => {
   // Fetch ROI analysis data
   const fetchRoiAnalysis = async () => {
     try {
-      const response = await axios.get(`${API}/properties/roi-analysis`);
+      const response = await axios.get(`${API}/roi-analysis`);
       setRoiData(response.data);
     } catch (error) {
       console.error('Error fetching ROI data:', error);
