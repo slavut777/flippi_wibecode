@@ -803,13 +803,14 @@ const Dashboard = () => {
                   <div className="bg-white rounded shadow p-4">
                     <h3 className="font-bold text-lg mb-2">Average Sale Price</h3>
                     <p className="text-3xl font-bold text-indigo-600">
-                      {properties.length > 0 && properties.filter(p => p.is_for_sale).length > 0
-                        ? (properties
-                            .filter(p => p.is_for_sale)
-                            .reduce((sum, p) => sum + p.price, 0) / 
-                            properties.filter(p => p.is_for_sale).length
-                          ).toLocaleString('fi-FI', { maximumFractionDigits: 0 })
-                        : '0'
+                      {(() => {
+                        const saleProps = properties.filter(p => p.is_for_sale === true);
+                        if (saleProps.length > 0) {
+                          const avg = saleProps.reduce((sum, p) => sum + p.price, 0) / saleProps.length;
+                          return avg.toLocaleString('fi-FI', { maximumFractionDigits: 0 });
+                        }
+                        return '0';
+                      })()
                       } €
                     </p>
                   </div>
