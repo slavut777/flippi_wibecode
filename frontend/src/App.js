@@ -928,21 +928,21 @@ const Dashboard = () => {
               {/* Stats Panel - Right Side */}
               <div className="col-span-3">
                 <div className="space-y-4">
-                  <div className="bg-white rounded shadow p-4">
+                  <div className="glass-card p-4">
                     <h3 className="font-bold text-lg mb-2">Property Count</h3>
                     {loading ? (
                       <p className="text-gray-500">Loading...</p>
                     ) : (
-                      <p className="text-3xl font-bold text-indigo-600">{properties.length}</p>
+                      <p className="text-3xl font-bold text-gray-800">{properties.length}</p>
                     )}
                   </div>
                   
-                  <div className="bg-white rounded shadow p-4">
+                  <div className="glass-card p-4">
                     <h3 className="font-bold text-lg mb-2">Average Sale Price</h3>
                     {loading ? (
                       <p className="text-gray-500">Loading...</p>
                     ) : (
-                      <p className="text-3xl font-bold text-indigo-600">
+                      <p className="text-3xl font-bold text-gray-800">
                         {(() => {
                           const saleProps = properties.filter(p => p.is_for_sale === true);
                           if (saleProps.length > 0) {
@@ -956,12 +956,12 @@ const Dashboard = () => {
                     )}
                   </div>
                   
-                  <div className="bg-white rounded shadow p-4">
+                  <div className="glass-card p-4">
                     <h3 className="font-bold text-lg mb-2">Average Rental Price</h3>
                     {loading ? (
                       <p className="text-gray-500">Loading...</p>
                     ) : (
-                      <p className="text-3xl font-bold text-indigo-600">
+                      <p className="text-3xl font-bold text-gray-800">
                         {(() => {
                           const rentalProps = properties.filter(p => p.is_for_sale === false);
                           if (rentalProps.length > 0) {
@@ -975,12 +975,12 @@ const Dashboard = () => {
                     )}
                   </div>
                   
-                  <div className="bg-white rounded shadow p-4">
+                  <div className="glass-card p-4">
                     <h3 className="font-bold text-lg mb-2">Average ROI</h3>
                     {loading ? (
                       <p className="text-gray-500">Loading...</p>
                     ) : (
-                      <p className="text-3xl font-bold text-indigo-600">
+                      <p className="text-3xl font-bold text-gray-800">
                         {roiData.length > 0
                           ? (roiData.reduce((sum, item) => sum + item.roi_years, 0) / roiData.length)
                               .toLocaleString('fi-FI', { maximumFractionDigits: 1 })
@@ -990,7 +990,7 @@ const Dashboard = () => {
                     )}
                   </div>
                   
-                  <div className="bg-white rounded shadow p-4">
+                  <div className="glass-card p-4">
                     <h3 className="font-bold text-lg mb-2">Property Types</h3>
                     <div style={{ height: '150px' }}>
                       <Pie 
