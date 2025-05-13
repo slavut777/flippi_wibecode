@@ -557,57 +557,82 @@ const Dashboard = () => {
   // Prepare building-ROI data for choropleth map
   const getBuildingRoiData = () => {
     if (!buildingsGeoJson || !roiData || roiData.length === 0) {
+      console.log('Missing GeoJSON or ROI data for map visualization');
       return buildingsGeoJson;
     }
     
-    // Create a map of coordinates to ROI
-    const roiByCoords = {};
-    roiData.forEach(item => {
-      const key = `${item.coordinates[0]},${item.coordinates[1]}`;
-      roiByCoords[key] = item.roi_years;
-    });
+    // Clone the original buildings GeoJSON
+    const enhancedGeoJson = JSON.parse(JSON.stringify(buildingsGeoJson));
     
-    // Enhance building GeoJSON with ROI data
-    const enhancedFeatures = buildingsGeoJson.features.map(feature => {
-      // Try to find the nearest ROI data
-      let nearestRoi = null;
+    // Create a function to find the nearest ROI point
+    const findNearestRoi = (buildingCenter) => {
+      let nearest = null;
       let minDistance = Number.MAX_VALUE;
       
-      // Calculate center of the building polygon
-      const coords = feature.geometry.coordinates[0];
-      const center = coords.reduce(
-        (acc, curr) => [acc[0] + curr[0] / coords.length, acc[1] + curr[1] / coords.length], 
-        [0, 0]
-      );
-      
-      // Find the nearest property with ROI data
-      roiData.forEach(item => {
-        const propCoords = item.coordinates;
+      roiData.forEach(roi => {
+        const roiLat = roi.coordinates[1];
+        const roiLng = roi.coordinates[0];
+        
+        // Calculate distance (simplified Euclidean)
         const distance = Math.sqrt(
-          Math.pow(center[0] - propCoords[0], 2) + 
-          Math.pow(center[1] - propCoords[1], 2)
+          Math.pow(buildingCenter[0] - roiLng, 2) + 
+          Math.pow(buildingCenter[1] - roiLat, 2)
         );
         
-        if (distance < minDistance && distance < 0.01) { // Within ~1km
+        if (distance < minDistance) {
           minDistance = distance;
-          nearestRoi = item.roi_years;
+          nearest = roi;
         }
       });
       
-      // Add ROI to properties
-      return {
-        ...feature,
-        properties: {
-          ...feature.properties,
-          roi: nearestRoi
-        }
-      };
+      // Only return if the nearest point is reasonably close (0.05 deg is roughly 5km)
+      if (minDistance < 0.05) {
+        return nearest;
+      }
+      return null;
+    };
+    
+    // Process buildings
+    let buildingsWithRoi = 0;
+    
+    enhancedGeoJson.features = enhancedGeoJson.features.map(feature => {
+      // Skip if geometry is missing
+      if (!feature.geometry || !feature.geometry.coordinates || !feature.geometry.coordinates[0]) {
+        return feature;
+      }
+      
+      // Calculate the center of the building polygon
+      const coords = feature.geometry.coordinates[0];
+      const center = coords.reduce(
+        (acc, curr) => [
+          acc[0] + curr[0] / coords.length, 
+          acc[1] + curr[1] / coords.length
+        ], 
+        [0, 0]
+      );
+      
+      // Find the nearest ROI data
+      const nearestRoi = findNearestRoi(center);
+      
+      if (nearestRoi) {
+        buildingsWithRoi++;
+        return {
+          ...feature,
+          properties: {
+            ...feature.properties,
+            roi: nearestRoi.roi_years,
+            avg_sale_price: nearestRoi.avg_sale_price,
+            avg_rent: nearestRoi.avg_monthly_rent
+          }
+        };
+      }
+      
+      return feature;
     });
     
-    return {
-      ...buildingsGeoJson,
-      features: enhancedFeatures
-    };
+    console.log(`Enhanced ${buildingsWithRoi} buildings with ROI data out of ${enhancedGeoJson.features.length} total`);
+    
+    return enhancedGeoJson;
   };
   
   // Prepare data for charts
