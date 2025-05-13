@@ -9,6 +9,7 @@
     "cra-template": "1.2.0",
     "leaflet": "^1.9.4",
     "papaparse": "^5.5.2",
+    "query-overpass": "^1.5.5",
     "react": "^19.0.0",
     "react-chartjs-2": "^5.3.0",
     "react-datepicker": "^8.3.0",
