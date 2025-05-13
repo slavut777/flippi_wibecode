@@ -171,12 +171,16 @@ const Dashboard = () => {
       queryParams.append('limit', '10000');
       
       const response = await axios.get(`${API}/properties?${queryParams.toString()}`);
-      setProperties(response.data);
-      console.log(`Fetched ${response.data.length} properties`);
-      console.log(`Sale properties: ${response.data.filter(p => p.is_for_sale === true).length}`);
-      console.log(`Rental properties: ${response.data.filter(p => p.is_for_sale === false).length}`);
+      const data = response.data;
+      setProperties(data);
+      console.log(`Fetched ${data.length} properties`);
+      console.log(`Sale properties: ${data.filter(p => p.is_for_sale === true).length}`);
+      console.log(`Rental properties: ${data.filter(p => p.is_for_sale === false).length}`);
+      
+      return data;
     } catch (error) {
       console.error('Error fetching properties:', error);
+      return [];
     } finally {
       setLoading(false);
     }
