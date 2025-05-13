@@ -117,7 +117,7 @@ const Dashboard = () => {
   const [activeTab, setActiveTab] = useState('map');
   const [mapMode, setMapMode] = useState('markers'); // markers, heatmap, or roi
   const [mapTooltip, setMapTooltip] = useState('');
-  const [heatmapMetric, setHeatmapMetric] = useState('price'); // price, density
+  const [mapBounds, setMapBounds] = useState(null);
   
   // Filter state
   const [filters, setFilters] = useState({
