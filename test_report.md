@@ -32,35 +32,46 @@ This report summarizes the testing of the Espoo Real Estate Dashboard applicatio
 ## Frontend UI Testing
 
 ### Dashboard Display
-❌ **Frontend Rendering**: The frontend application fails to load due to a JavaScript error.
+✅ **Frontend Rendering**: The frontend application now loads correctly after fixing the HeatmapLayer import.
 
-❌ **Heat Map Functionality**: Unable to test due to frontend error.
+✅ **Heat Map Functionality**: The heat map is now working correctly. When selecting the "Heat Map" view, the map displays colored hotspots showing property density.
 
-❌ **ROI Map Functionality**: Unable to test due to frontend error.
+❌ **ROI Map Functionality**: The ROI Map view doesn't display building outlines with ROI data as expected.
 
-❌ **Map Style (HOT OSM)**: Unable to test due to frontend error.
+✅ **Map Style (HOT OSM)**: The HOT OSM map style is correctly applied. The map tiles are loaded from "openstreetmap.fr/hot/".
+
+### Data Display Issues
+⚠️ **Property Count**: Initially shows 0, then updates to 1000 properties (not the full 5,654 properties).
+
+⚠️ **Average Prices**: 
+- Average Sale Price: Shows 364,852 € (close to the expected 366,842.78 €)
+- Average Rental Price: Shows 0 € /month (should be around 963.98 €/month)
+
+### Console Errors
+⚠️ There's an error in the console: "Failed to load resource: the server responded with a status of 502 ()" which suggests there might be an issue with one of the API calls.
 
 ## Issues and Recommendations
 
-### Critical Issue Identified
-The frontend application is failing to load due to a compatibility issue between the libraries:
-
-1. **Error Message**: "Super expression must either be null or a function, not undefined"
-
-2. **Root Cause**: The application is using React 19.0.0 and react-leaflet 5.0.0, but it's using an older version of react-leaflet-heatmap-layer (2.0.0) which is not compatible with these newer versions.
-
-3. **Affected Component**: HeatmapLayer from 'react-leaflet-heatmap-layer'
-
-### Recommended Fix
-Update the import statement in App.js to use the v3 version of the heatmap layer which is already installed in the project:
-
+### Fixed Issues
+✅ **HeatmapLayer Import**: Fixed the import statement for the HeatmapLayer component to use the v3 version:
 ```javascript
-// Change this:
+// Changed from:
 import HeatmapLayer from 'react-leaflet-heatmap-layer';
 
-// To this:
-import HeatmapLayer from 'react-leaflet-heatmap-layer-v3';
+// To:
+import { HeatmapLayer } from 'react-leaflet-heatmap-layer-v3';
 ```
 
+### Remaining Issues
+1. **ROI Map Building Outlines**: The ROI Map view doesn't display building outlines with ROI data.
+
+2. **Property Count Limitation**: The UI only shows 1000 properties instead of all 5,654 properties.
+
+3. **Average Rental Price**: The average rental price is showing as 0 € /month instead of the expected ~964 €/month.
+
+4. **API Error (502)**: There's a 502 error when making some API calls, which might be affecting data loading.
+
 ## Conclusion
-The backend is functioning correctly with the expected data imported (5,654 properties total, with 2,867 for sale and 2,787 for rent). However, the frontend application is not loading due to a library compatibility issue. Once the import statement is updated to use the v3 version of the heatmap layer, the application should work correctly, allowing us to test the heat map, ROI map, and HOT OSM map styling functionality.
+After fixing the HeatmapLayer import issue, the application now loads correctly and the heat map functionality is working. The HOT OSM map style is also correctly applied. However, there are still issues with the ROI Map functionality, property count display, and average rental price calculation. These issues should be addressed to fully meet the requirements.
+
+The backend is functioning correctly with the expected data imported (5,654 properties total, with 2,867 for sale and 2,787 for rent).
