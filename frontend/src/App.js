@@ -322,15 +322,22 @@ const Dashboard = () => {
   // Fetch ROI analysis data
   const fetchRoiAnalysis = async () => {
     try {
-      // Calculate ROI directly in the frontend
-      // We already have properties loaded, so we can calculate ROI for each location
+      if (!properties || properties.length === 0) {
+        console.warn('No properties loaded, cannot calculate ROI');
+        return;
+      }
+      
+      console.log('Calculating ROI with', properties.length, 'properties');
       
       // Create a map of coordinates to properties
       const coordMap = {};
       
       // Group by coordinates with a small tolerance for matching points
       properties.forEach(property => {
-        if (!property.location || !property.location.coordinates) return;
+        if (!property.location || !property.location.coordinates) {
+          console.warn('Property missing coordinates:', property.id);
+          return;
+        }
         
         const coords = property.location.coordinates;
         // Round to 3 decimal places to group nearby properties
@@ -344,17 +351,19 @@ const Dashboard = () => {
           };
         }
         
-        if (property.is_for_sale) {
+        if (property.is_for_sale === true) {
           coordMap[key].sales.push(property);
-        } else {
+        } else if (property.is_for_sale === false) {
           coordMap[key].rentals.push(property);
+        } else {
+          console.warn('Property missing is_for_sale flag:', property.id);
         }
       });
       
       // Calculate ROI for each location
       const roiData = [];
       
-      Object.values(coordMap).forEach(locationData => {
+      Object.entries(coordMap).forEach(([key, locationData]) => {
         if (locationData.sales.length > 0 && locationData.rentals.length > 0) {
           // Calculate average sale price
           const avgSalePrice = locationData.sales.reduce((sum, prop) => sum + prop.price, 0) / 
@@ -388,6 +397,10 @@ const Dashboard = () => {
       
       setRoiData(roiData);
       console.log(`Calculated ROI for ${roiData.length} locations`);
+      
+      if (roiData.length === 0) {
+        console.warn('No ROI data could be calculated. Check if properties have both sale and rental data at same locations.');
+      }
     } catch (error) {
       console.error('Error calculating ROI data:', error);
     }
