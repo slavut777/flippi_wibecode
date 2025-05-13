@@ -91,7 +91,7 @@ class Building(BaseModel):
     properties: Dict[str, Any]
 
 # Utils for parsing CSV
-def parse_csv_to_properties(csv_content):
+def parse_csv_to_properties(csv_content, is_rental=False):
     try:
         df = pd.read_csv(io.StringIO(csv_content.decode('utf-8')))
         
@@ -100,38 +100,46 @@ def parse_csv_to_properties(csv_content):
         
         for _, row in df.iterrows():
             # Extract coordinates
-            lat = row.get('lat', None)
-            lng = row.get('lng', None)
+            lat = row.get('latitude', None)
+            lng = row.get('longitude', None)
             
             if pd.isna(lat) or pd.isna(lng):
                 # Skip entries without valid coordinates
                 continue
-                
-            # Determine if property is for sale or rent
-            is_for_sale = True
-            if 'listing_type' in row:
-                is_for_sale = row['listing_type'].lower() in ['sale', 'buy', 'for sale', 'sell']
+            
+            # Get other properties    
+            price = float(row.get('price', 0))
+            square_meters = float(row.get('square', 0)) if not pd.isna(row.get('square', None)) else None
+            rooms = int(row.get('rooms', 0)) if not pd.isna(row.get('rooms', None)) else None
+            address = row.get('address', '')
+            house_type = row.get('house_type', '')
+            building_type = row.get('building_type', '')
+            year = row.get('year_of_construction', None)
             
             # Create property object
             property_data = {
-                "title": row.get('address', 'Unnamed Property'),
-                "price": float(row.get('price', 0)),
-                "price_currency": row.get('currency', 'EUR'),
-                "property_type": f"{row.get('rooms', 0)} Room",
-                "area": float(row.get('square_meters', 0)) if not pd.isna(row.get('square_meters', None)) else None,
-                "rooms": int(row.get('rooms', 0)) if not pd.isna(row.get('rooms', None)) else None,
-                "bathrooms": int(row.get('bathrooms', 0)) if not pd.isna(row.get('bathrooms', None)) else None,
+                "title": address,
+                "price": price,
+                "price_currency": "EUR",
+                "property_type": f"{rooms} Room {building_type}",
+                "area": square_meters,
+                "rooms": rooms,
+                "bathrooms": 1,  # Default value
                 "location": {
                     "type": "Point",
                     "coordinates": [float(lng), float(lat)],
-                    "address": row.get('address', ''),
+                    "address": address,
                     "city": "Espoo",
                     "region": "Espoo",
-                    "postal_code": row.get('postal_code', '')
+                    "postal_code": ""
                 },
-                "source": row.get('source', 'csv_import'),
-                "url": row.get('url', None),
-                "is_for_sale": is_for_sale
+                "source": "rental_data" if is_rental else "sales_data",
+                "url": None,
+                "is_for_sale": not is_rental,
+                "year_built": year if not pd.isna(year) else None,
+                "house_type": house_type,
+                "building_type": building_type,
+                "has_sauna": row.get('sauna', False) if not pd.isna(row.get('sauna', None)) else False
             }
             
             # Add property ID
