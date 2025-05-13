@@ -1134,11 +1134,11 @@ const Dashboard = () => {
           <div className="mt-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* CSV Upload */}
-              <div className="bg-white rounded shadow p-4">
+              <div className="glass-card p-4">
                 <h3 className="font-bold text-lg mb-4">Upload CSV Data</h3>
                 <p className="mb-4 text-gray-600">
-                  Upload a CSV file containing property data. The file should include columns for address, price, 
-                  property type (rooms), location information (lat, lng), and square meters.
+                  Upload a CSV file containing property data. The file should include columns for title, price, property type, 
+                  location information (latitude, longitude, address, etc.), and listing type (sale/rent).
                 </p>
                 
                 <div className="mb-4">
@@ -1151,15 +1151,15 @@ const Dashboard = () => {
                     file:mr-4 file:py-2 file:px-4
                     file:rounded file:border-0
                     file:text-sm file:font-medium
-                    file:bg-indigo-50 file:text-indigo-700
-                    hover:file:bg-indigo-100"
+                    file:bg-gray-800 file:text-white
+                    hover:file:bg-gray-700"
                   />
                 </div>
                 
                 <button
                   onClick={handleFileUpload}
                   disabled={!csvFile || loading}
-                  className={`bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 flex items-center 
+                  className={`glass-button px-4 py-2 rounded flex items-center 
                     ${(!csvFile || loading) ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
                   <ArrowUpTrayIcon className="h-5 w-5 mr-2" />
