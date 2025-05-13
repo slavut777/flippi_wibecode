@@ -1035,7 +1035,7 @@ const Dashboard = () => {
                         </tr>
                       </thead>
                       <tbody>
-                        {roiData.sort((a, b) => a.roi_years - b.roi_years).map((item, index) => (
+                        {roiData.sort((a, b) => a.roi_years - b.roi_years).slice(0, 50).map((item, index) => (
                           <tr key={index} className={index % 2 === 0 ? 'bg-gray-50' : ''}>
                             <td className="px-4 py-2">{item.address}</td>
                             <td className="px-4 py-2 text-right">
@@ -1051,16 +1051,17 @@ const Dashboard = () => {
                         ))}
                       </tbody>
                     </table>
+                    
+                    {roiData.length > 50 && (
+                      <div className="mt-4 text-center text-gray-500">
+                        Showing first 50 of {roiData.length} results.
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div className="p-4 bg-yellow-100 text-yellow-800 rounded">
-                    <p>No ROI data available. This could be because:</p>
-                    <ul className="list-disc ml-5 mt-2">
-                      <li>No properties have been loaded yet</li>
-                      <li>There are no locations with both sales and rental data</li>
-                      <li>The coordinates for sales and rental properties don't match</li>
-                    </ul>
-                    <p className="mt-2">Try importing data first, or check the console for errors.</p>
+                    <p>Загрузка данных об окупаемости...</p>
+                    <p className="mt-2">Пожалуйста, дождитесь загрузки данных или перейдите на вкладку Data Import и нажмите "Import Sample Data".</p>
                   </div>
                 )}
               </div>
