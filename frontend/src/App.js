@@ -323,7 +323,13 @@ const Dashboard = () => {
       
       // Adjust intensity based on selected metric
       if (heatmapMetric === 'price') {
-        intensity = property.price / 100000; // Scale down prices for better visualization
+        // For price heatmap, use higher values for higher prices
+        intensity = property.is_for_sale ? 
+          property.price / 1000000 :  // Scale down sale prices (typically higher)
+          property.price / 3000;      // Scale down rental prices (typically lower)
+      } else if (heatmapMetric === 'density') {
+        // For density heatmap, use uniform intensity
+        intensity = 1.5;
       }
       
       return [
