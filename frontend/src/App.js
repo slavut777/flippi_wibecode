@@ -997,17 +997,21 @@ const Dashboard = () => {
                   
                   <div className="bg-white rounded shadow p-4">
                     <h3 className="font-bold text-lg mb-2">Average Rental Price</h3>
-                    <p className="text-3xl font-bold text-indigo-600">
-                      {(() => {
-                        const rentalProps = properties.filter(p => p.is_for_sale === false);
-                        if (rentalProps.length > 0) {
-                          const avg = rentalProps.reduce((sum, p) => sum + p.price, 0) / rentalProps.length;
-                          return avg.toLocaleString('fi-FI', { maximumFractionDigits: 0 });
-                        }
-                        return '0';
-                      })()
-                      } € /month
-                    </p>
+                    {loading ? (
+                      <p className="text-gray-500">Loading...</p>
+                    ) : (
+                      <p className="text-3xl font-bold text-indigo-600">
+                        {(() => {
+                          const rentalProps = properties.filter(p => p.is_for_sale === false);
+                          if (rentalProps.length > 0) {
+                            const avg = rentalProps.reduce((sum, p) => sum + p.price, 0) / rentalProps.length;
+                            return avg.toLocaleString('fi-FI', { maximumFractionDigits: 0 });
+                          }
+                          return '0';
+                        })()
+                        } € /month
+                      </p>
+                    )}
                   </div>
                   
                   <div className="bg-white rounded shadow p-4">
