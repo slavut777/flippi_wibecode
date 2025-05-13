@@ -956,7 +956,7 @@ const Dashboard = () => {
                       </Marker>
                     ))}
                     
-                    {mapMode === 'heatmap' && (
+                    {mapMode === 'heatmap' && properties.length > 0 && (
                       <HeatmapLayer
                         points={getHeatmapData()}
                         longitudeExtractor={m => m[1]}
