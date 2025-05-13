@@ -322,125 +322,13 @@ const Dashboard = () => {
   // Fetch ROI analysis data
   const fetchRoiAnalysis = async () => {
     try {
-      if (!properties || properties.length === 0) {
-        console.warn('No properties loaded, cannot calculate ROI');
-        return;
-      }
-      
-      console.log('Calculating ROI with', properties.length, 'properties');
-      
-      // Split properties into sales and rentals
-      const saleProperties = properties.filter(p => p.is_for_sale === true);
-      const rentalProperties = properties.filter(p => p.is_for_sale === false);
-      
-      console.log(`Found ${saleProperties.length} sales and ${rentalProperties.length} rentals for ROI calculation`);
-      
-      if (saleProperties.length === 0 || rentalProperties.length === 0) {
-        console.warn('Not enough properties to calculate ROI - need both sales and rentals');
-        return;
-      }
-      
-      // Group properties by area (less strict matching)
-      // We'll use a grid-based approach to match nearby properties
-      const gridSize = 0.01; // roughly 1km grid cells
-      const areaGrid = {};
-      
-      // Function to get grid cell key
-      const getGridKey = (lat, lng) => {
-        const latCell = Math.floor(lat / gridSize);
-        const lngCell = Math.floor(lng / gridSize);
-        return `${latCell},${lngCell}`;
-      };
-      
-      // Place sale properties into grid
-      saleProperties.forEach(property => {
-        if (!property.location || !property.location.coordinates) return;
-        
-        const [lng, lat] = property.location.coordinates;
-        const key = getGridKey(lat, lng);
-        
-        if (!areaGrid[key]) {
-          areaGrid[key] = {
-            center: { lat, lng },
-            sales: [],
-            rentals: [],
-            address: property.location.address || 'Unknown'
-          };
-        }
-        
-        areaGrid[key].sales.push(property);
-        // Use the most specific address available
-        if (property.location.address && property.location.address.length > areaGrid[key].address.length) {
-          areaGrid[key].address = property.location.address;
-        }
-      });
-      
-      // Add rental properties to grid
-      rentalProperties.forEach(property => {
-        if (!property.location || !property.location.coordinates) return;
-        
-        const [lng, lat] = property.location.coordinates;
-        const key = getGridKey(lat, lng);
-        
-        if (!areaGrid[key]) {
-          areaGrid[key] = {
-            center: { lat, lng },
-            sales: [],
-            rentals: [],
-            address: property.location.address || 'Unknown'
-          };
-        }
-        
-        areaGrid[key].rentals.push(property);
-        // Use the most specific address available
-        if (property.location.address && property.location.address.length > areaGrid[key].address.length) {
-          areaGrid[key].address = property.location.address;
-        }
-      });
-      
-      // Calculate ROI for areas with both sales and rentals
-      const roiData = [];
-      
-      Object.keys(areaGrid).forEach(key => {
-        const area = areaGrid[key];
-        
-        if (area.sales.length > 0 && area.rentals.length > 0) {
-          // Calculate average sale price in this area
-          const avgSalePrice = area.sales.reduce((sum, prop) => sum + prop.price, 0) / area.sales.length;
-          
-          // Calculate average monthly rent in this area
-          const avgRent = area.rentals.reduce((sum, prop) => sum + prop.price, 0) / area.rentals.length;
-          
-          // Calculate annual rent
-          const annualRent = avgRent * 12;
-          
-          // Calculate ROI in years
-          if (annualRent > 0) {
-            const roi = avgSalePrice / annualRent;
-            
-            roiData.push({
-              coordinates: [area.center.lng, area.center.lat],
-              avg_sale_price: avgSalePrice,
-              avg_monthly_rent: avgRent,
-              roi_years: roi,
-              address: area.address
-            });
-          }
-        }
-      });
-      
-      console.log(`Calculated ROI for ${roiData.length} areas`);
-      
-      if (roiData.length === 0) {
-        console.warn('No ROI data could be calculated. This might be due to no overlap between sale and rental areas.');
-      } else {
-        // Debug first few ROI entries
-        console.log('Sample ROI data:', roiData.slice(0, 3));
-      }
-      
-      setRoiData(roiData);
+      console.log('Getting ROI data from API');
+      const response = await axios.get(`${API}/roi-analysis`);
+      const data = response.data;
+      console.log(`Got ${data.length} ROI data points from API`);
+      setRoiData(data);
     } catch (error) {
-      console.error('Error calculating ROI data:', error);
+      console.error('Error fetching ROI data:', error);
     }
   };
   
