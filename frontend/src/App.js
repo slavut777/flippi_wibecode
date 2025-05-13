@@ -124,27 +124,30 @@ const Dashboard = () => {
   const importDefaultData = async () => {
     setLoading(true);
     try {
+      // Clear any existing data
+      setProperties([]);
+      setRoiData([]);
+      
+      // Import data
       const response = await axios.post(`${API}/import-default-data`);
       console.log('Default data imported:', response.data);
       setDataImported(true);
       
-      // Load data with a slight delay to ensure database has processed all entries
-      await fetchProperties();
+      // Load property data
+      const propsResponse = await axios.get(`${API}/properties?limit=10000`);
+      setProperties(propsResponse.data);
+      console.log(`Loaded ${propsResponse.data.length} properties`);
       
-      // Only after properties are loaded, fetch the dependent data
-      if (properties.length > 0) {
-        await Promise.all([
-          fetchRegionStats(),
-          fetchPropertyTypes(),
-          fetchSources(),
-          fetchBuildings(),
-        ]);
-        
-        // Calculate ROI after all data is loaded
-        fetchRoiAnalysis();
-      } else {
-        console.warn('No properties were loaded, cannot fetch dependent data');
-      }
+      // Load dependent data in parallel
+      await Promise.all([
+        fetchPropertyTypes(),
+        fetchSources(),
+        fetchBuildings(),
+        fetchRegionStats(),
+        fetchRoiAnalysis()
+      ]);
+      
+      console.log('All data loaded successfully');
     } catch (error) {
       console.error('Error importing default data:', error);
       setUploadError('Error importing data: ' + (error.response?.data?.detail || error.message));
