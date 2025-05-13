@@ -499,7 +499,7 @@ async def get_buildings(
     return buildings
 
 # ROI analysis by building
-@api_router.get("/properties/roi-analysis")
+@api_router.get("/roi-analysis")
 async def get_roi_analysis():
     try:
         logging.info("Fetching ROI analysis data")
