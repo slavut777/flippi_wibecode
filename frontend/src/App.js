@@ -1,30 +1,38 @@
-  // Prepare data for heatmap
-  const getHeatmapData = () => {
-    const visibleProps = getVisibleProperties();
-    if (!visibleProps || visibleProps.length === 0) return [];
-    
-    return visibleProps.map(property => {
-      if (!property.location || !property.location.coordinates) {
-        console.warn("Property missing coordinates:", property);
-        return null;
-      }
-      
-      const coords = property.location.coordinates;
-      let intensity = 1;
-      
-      // Adjust intensity based on price
-      if (property.is_for_sale) {
-        // Sale properties
-        intensity = property.price / 1000000;  // Scale down sale prices (typically higher)
-      } else {
-        // Rental properties
-        intensity = property.price / 3000;     // Scale down rental prices (typically lower)
-      }
-      
-      return [
-        coords[1], // latitude
-        coords[0], // longitude
-        intensity
-      ];
-    }).filter(Boolean); // Remove null values
-  };
+                {mapMode === 'heatmap' && (
+                  <div className="mt-2 p-2 glass-card flex items-center justify-center">
+                    <div className="flex items-center space-x-8">
+                      <span className="text-sm font-bold">Heat Map Legend:</span>
+                      {heatmapMetric === 'price' ? (
+                        <>
+                          <div className="flex items-center space-x-1">
+                            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: 'rgba(0, 0, 255, 0.3)' }}></div>
+                            <span className="text-xs">Low Price</span>
+                          </div>
+                          <div className="flex items-center space-x-1">
+                            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: 'rgba(0, 255, 0, 0.5)' }}></div>
+                            <span className="text-xs">Medium Price</span>
+                          </div>
+                          <div className="flex items-center space-x-1">
+                            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: 'rgba(255, 0, 0, 0.7)' }}></div>
+                            <span className="text-xs">High Price</span>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div className="flex items-center space-x-1">
+                            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: 'rgba(0, 0, 255, 0.3)' }}></div>
+                            <span className="text-xs">Low Density</span>
+                          </div>
+                          <div className="flex items-center space-x-1">
+                            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: 'rgba(0, 255, 0, 0.5)' }}></div>
+                            <span className="text-xs">Medium Density</span>
+                          </div>
+                          <div className="flex items-center space-x-1">
+                            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: 'rgba(255, 0, 0, 0.7)' }}></div>
+                            <span className="text-xs">High Density</span>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                )}
