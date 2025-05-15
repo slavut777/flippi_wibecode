@@ -1207,11 +1207,14 @@ const Dashboard = () => {
             </div>
             <div className="mb-6">
               <p className="mb-4">
-                Full functionality is available with a subscription plan. Please choose an appropriate plan.
+                Full functionality of Flippi is available with a subscription plan. Please choose an appropriate plan.
               </p>
               <p className="mb-4 font-medium">
                 Unfortunately, the ability to make subscription payments is temporarily unavailable. 
                 We are working to resolve this issue as soon as possible!
+              </p>
+              <p className="mb-4">
+                Please connect us <span className="font-bold">hello@flippi.pro</span> if you see this message.
               </p>
             </div>
             <div className="flex justify-end">
