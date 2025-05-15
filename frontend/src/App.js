@@ -117,7 +117,12 @@ const Dashboard = () => {
   
   // Load initial data
   useEffect(() => {
-    importDefaultData();
+    fetchProperties();
+    fetchRegionStats();
+    fetchPropertyTypes();
+    fetchSources();
+    fetchBuildings();
+    fetchRoiAnalysis();
   }, []);
   
   // State for subscription modal
