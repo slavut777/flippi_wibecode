@@ -1186,6 +1186,40 @@ const Dashboard = () => {
           </div>
         )}
       </main>
+      
+      {/* Subscription Modal */}
+      {showSubscriptionModal && (
+        <div className="overlay">
+          <div className="glass-card p-6 max-w-lg">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold text-gray-800">Subscription Required</h2>
+              <button 
+                onClick={() => setShowSubscriptionModal(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <XMarkIcon className="h-6 w-6" />
+              </button>
+            </div>
+            <div className="mb-6">
+              <p className="mb-4">
+                Full functionality is available with a subscription plan. Please choose an appropriate plan.
+              </p>
+              <p className="mb-4 font-medium">
+                Unfortunately, the ability to make subscription payments is temporarily unavailable. 
+                We are working to resolve this issue as soon as possible!
+              </p>
+            </div>
+            <div className="flex justify-end">
+              <button
+                onClick={() => setShowSubscriptionModal(false)}
+                className="glass-button px-4 py-2 rounded"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
