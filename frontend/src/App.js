@@ -1167,7 +1167,7 @@ const Dashboard = () => {
               <div className="glass-card p-4">
                 <h3 className="font-bold text-lg mb-4">Import Sample Data</h3>
                 <p className="mb-4 text-gray-600">
-                  Import the sample dataset of Espoo properties. This includes both sales and rental data,
+                  Import the sample dataset of Lyon properties. This includes both sales and rental data,
                   with information about property prices, locations, and characteristics.
                 </p>
                 
