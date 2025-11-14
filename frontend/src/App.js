@@ -812,6 +812,14 @@ const Dashboard = () => {
                     >
                       ROI Map
                     </button>
+
+                    {/* Quick data loader for development */}
+                    <button 
+                      className={`glass-button px-3 py-1 rounded ml-4 bg-red-600 text-white`}
+                      onClick={importDefaultData}
+                    >
+                      Load Lyon Data
+                    </button>
                   </div>
                   
                   {mapMode === 'heatmap' && (
