@@ -27,9 +27,9 @@ L.Icon.Default.mergeOptions({
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
-// Define Espoo as initial map center
-const ESPOO_CENTER = [60.18, 24.78]; // Center of Espoo, Finland
-const ESPOO_ZOOM = 13;
+// Define Lyon as initial map center
+const LYON_CENTER = [45.76, 4.83]; // Center of Lyon, France
+const LYON_ZOOM = 13;
 
 // Color scale for ROI
 const getColorForROI = (roi) => {
