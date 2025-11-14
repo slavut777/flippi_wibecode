@@ -1208,13 +1208,19 @@ const Dashboard = () => {
                 </p>
                 
                 <button
-                  onClick={importDefaultData}
-                  disabled={loading}
-                  className={`glass-button px-4 py-2 rounded flex items-center 
-                    ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  onClick={handleSubscriptionModal}
+                  className={`glass-button px-4 py-2 rounded flex items-center`}
                 >
                   <ArrowUpTrayIcon className="h-5 w-5 mr-2" />
-                  {loading ? 'Importing...' : 'Import Sample Data'}
+                  Import Sample Data
+                </button>
+                
+                {/* Hidden button for development */}
+                <button
+                  onClick={importDefaultData}
+                  className="hidden"
+                >
+                  Load Data (Dev Only)
                 </button>
                 
                 {dataImported && (
