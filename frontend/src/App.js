@@ -129,9 +129,45 @@ const Dashboard = () => {
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
   
   // Import default data
-  const importDefaultData = async () => {
-    // Show subscription modal instead of importing data
+  const handleSubscriptionModal = () => {
+    // Show subscription modal
     setShowSubscriptionModal(true);
+  };
+
+  // Actually import data (for development only)
+  const importDefaultData = async () => {
+    setLoading(true);
+    try {
+      // Clear any existing data
+      setProperties([]);
+      setRoiData([]);
+      
+      // Import data
+      const response = await axios.post(`${API}/import-default-data`);
+      console.log('Default data imported:', response.data);
+      setDataImported(true);
+      
+      // Load property data
+      const propsResponse = await axios.get(`${API}/properties?limit=10000`);
+      setProperties(propsResponse.data);
+      console.log(`Loaded ${propsResponse.data.length} properties`);
+      
+      // Load dependent data in parallel
+      await Promise.all([
+        fetchPropertyTypes(),
+        fetchSources(),
+        fetchBuildings(),
+        fetchRegionStats(),
+        fetchRoiAnalysis()
+      ]);
+      
+      console.log('All data loaded successfully');
+    } catch (error) {
+      console.error('Error importing default data:', error);
+      setUploadError('Error importing data: ' + (error.response?.data?.detail || error.message));
+    } finally {
+      setLoading(false);
+    }
   };
   
   // Fetch properties with filters
