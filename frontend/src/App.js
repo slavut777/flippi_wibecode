@@ -798,8 +798,8 @@ const Dashboard = () => {
                 
                 <div style={{ height: '70vh', width: '100%' }}>
                   <MapContainer 
-                    center={ESPOO_CENTER} 
-                    zoom={ESPOO_ZOOM} 
+                    center={LYON_CENTER} 
+                    zoom={LYON_ZOOM} 
                     style={{ height: '100%', width: '100%' }}
                   >
                     {/* OpenStreetMap tile layer - using light gray style */}
